@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Campaign;
+use App\Models\News;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -23,6 +25,15 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home');
+        $featuredCampaigns = Campaign::where('status', 'active')
+            ->orderBy('current_amount', 'desc')
+            ->take(3)
+            ->get();
+
+        $latestNews = News::latest()
+            ->take(3)
+            ->get();
+
+        return view('welcome', compact('featuredCampaigns', 'latestNews'));
     }
 }
