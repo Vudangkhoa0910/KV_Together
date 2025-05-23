@@ -1,0 +1,206 @@
+/* Hero Section */
+main.hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
+    max-width: 1900px;
+    margin: 0 auto;
+    background: url('/images/bg.jpeg') center/cover no-repeat;
+    border-radius: 1rem;
+    min-height: 50vh;
+    overflow: hidden;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(30, 30, 30, 0.55); /* overlay tối hơn */
+    border-radius: 1rem;
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+h1 {
+    font-weight: 900;
+    font-size: 2.5rem;
+    line-height: 1.2;
+    max-width: 90%;
+    color: #fff;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    animation: fadeInUp 1s ease;
+}
+
+@media (min-width: 768px) {
+    h1 {
+        font-size: 4rem;
+    }
+}
+
+.white-text {
+    font-family: Arial, sans-serif;
+    color: #fff;
+}
+
+.red-text {
+    font-family: Arial, sans-serif;
+    color: #ffb4b4;
+    text-shadow: 0 2px 8px #b91c1c;
+    text-decoration: underline;
+    text-decoration-thickness: 5px;
+    text-decoration-color: #fbbf24;
+}
+
+.yellow-text {
+    color: #ffe066;
+    font-family: Arial, sans-serif;
+    font-weight: 900;
+}
+
+.hero-desc {
+    margin-top: 1.5rem;
+    font-size: 1.25rem;
+    max-width: 700px;
+    color: #fffbe7;
+    text-shadow: 0 2px 8px #000;
+    animation: fadeInUp 1s ease 0.3s;
+    animation-fill-mode: backwards;
+}
+
+.buttons {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.button-primary {
+    background-color: #ea580c;
+    color: #fff;
+    border: 2px solid #ea580c;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.button-primary:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+.button-secondary {
+    background-color: transparent;
+    color: #ffe066;
+    border: 2px solid #ffe066;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.button-secondary:hover {
+    background-color: #ffe066;
+    color: #b91c1c;
+    border-color: #ffe066;
+}
+
+/* Hero Stats Section - sau project */
+.hero-stats {
+    position: relative;
+    width: 100%;
+    background: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 24px 0 rgba(30,41,59,0.07);
+    padding: 2.5rem 0 2rem 0;
+    margin: 2.5rem auto 2rem auto;
+    max-width: 1200px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+.hero-stats:hover {
+    box-shadow: 0 8px 32px 0 rgba(30,41,59,0.13);
+}
+.hero-stats-bg {
+    display: none;
+}
+.hero-stats-content {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+.hero-stats-title {
+    color: #ea580c;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    letter-spacing: -1px;
+}
+.hero-stats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2.5rem;
+}
+.hero-stat {
+    min-width: 120px;
+    flex: 1 1 120px;
+    background: #f9fafb;
+    border-radius: 1rem;
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+    box-shadow: 0 2px 8px 0 rgba(30,41,59,0.04);
+    margin: 0 0.5rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.hero-stat:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 6px 18px 0 rgba(30,41,59,0.10);
+}
+.hero-stat-label {
+    color: #64748b;
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+.hero-stat-value {
+    color: #ea580c;
+    font-size: 2.1rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 0.2rem;
+    font-family: 'Poppins', Arial, sans-serif;
+}
+@media (max-width: 900px) {
+    .hero-stats-grid {
+        gap: 1.2rem;
+    }
+    .hero-stats-content {
+        padding: 0 0.5rem;
+    }
+    .hero-stats-title {
+        font-size: 1.3rem;
+    }
+    .hero-stat-value {
+        font-size: 1.3rem;
+    }
+}
+
+.hero-stats, .hero-stats * {
+    font-family: Arial, sans-serif !important;
+} 

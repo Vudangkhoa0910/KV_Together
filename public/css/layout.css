@@ -1,0 +1,74 @@
+body {
+    background: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+}
+
+.container {
+    max-width: 1900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+}
+
+/* Common Button Styles */
+.button-primary, .button-secondary {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.button-primary {
+    background-color: #ea580c;
+    color: white;
+    border: 2px solid #ea580c;
+}
+
+.button-primary:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+.button-secondary {
+    background-color: transparent;
+    color: #ea580c;
+    border: 2px solid #ea580c;
+}
+
+.button-secondary:hover {
+    background-color: #ea580c;
+    color: white;
+}
+
+@media (min-width: 768px) {
+    .button-primary, .button-secondary {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+} 
