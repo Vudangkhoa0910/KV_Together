@@ -1,0 +1,44 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(to bottom right, #1a1a40, #0d0d2b);
+    color: white;
+}
+
+.hero {
+    padding: 5rem 1rem;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(to right, #c026d3, #fb923c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pulse 3s infinite;
+}
+
+.hero p {
+    color: #d1d5db;
+    max-width: 600px;
+    margin: 1.5rem auto;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+button.explore-btn {
+    background: linear-gradient(to right, #c026d3, #fb923c, #facc15);
+    padding: 0.75rem 2rem;
+    border-radius: 9999px;
+    color: white;
+    font-weight: 600;
+    transition: transform 0.3s;
+}
+button.explore-btn:hover {
+    transform: scale(1.05);
+}

@@ -6,3 +6,10 @@
 
 // Bootstrap
 @import 'bootstrap/scss/bootstrap';
+
+nav {
+    font-family: 'Inter', sans-serif;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
