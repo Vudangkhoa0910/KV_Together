@@ -3,34 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campaign;
+use App\Models\Category;
+use App\Models\CampaignUpdate;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class CampaignController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $campaigns = Campaign::where('status', 'active')
-            ->orderBy('created_at', 'desc')
-            ->paginate(9);
+        $categories = Category::all();
+        $query = Campaign::where('status', 'active');
 
-        return view('campaigns.index', compact('campaigns'));
+        if (request('category_id')) {
+            $query->where('category_id', request('category_id'));
+        }
+
+        $campaigns = $query->orderBy('created_at', 'desc')->paginate(9);
+
+        return view('campaigns.index', compact('campaigns', 'categories'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('campaigns.create');
+        $categories = Category::all();
+        return view('campaigns.create', compact('categories'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -39,7 +39,8 @@ class CampaignController extends Controller
             'target_amount' => 'required|numeric|min:1',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'image' => 'required|image|max:2048'
+            'image' => 'required|image|max:2048',
+            'category_id' => 'required|exists:categories,id',
         ]);
 
         if ($request->hasFile('image')) {
@@ -47,40 +48,36 @@ class CampaignController extends Controller
             $validated['image'] = $path;
         }
 
-        $validated['user_id'] = auth()->id();
+        $validated['organizer_id'] = auth()->id();
         $validated['current_amount'] = 0;
-        $validated['status'] = 'active';
+        $validated['status'] = 'pending'; // Chờ phê duyệt
 
-        Campaign::create($validated);
+        $campaign = Campaign::create($validated);
+
+        // Thông báo cho quản trị viên
+        Notification::create([
+            'user_id' => auth()->id(),
+            'type' => 'campaign_submitted',
+            'message' => "Chiến dịch '{$campaign->title}' đã được gửi để phê duyệt.",
+        ]);
 
         return redirect()->route('campaigns.index')
-            ->with('success', 'Campaign created successfully.');
+            ->with('success', 'Campaign submitted for approval.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Campaign $campaign)
     {
-        $campaign->load(['donations' => function ($query) {
-            $query->latest();
-        }]);
-
+        $campaign->load(['donations' => fn($query) => $query->latest(), 'updates', 'category']);
         return view('campaigns.show', compact('campaign'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Campaign $campaign)
     {
         $this->authorize('update', $campaign);
-        return view('campaigns.edit', compact('campaign'));
+        $categories = Category::all();
+        return view('campaigns.edit', compact('campaign', 'categories'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Campaign $campaign)
     {
         $this->authorize('update', $campaign);
@@ -91,11 +88,11 @@ class CampaignController extends Controller
             'target_amount' => 'required|numeric|min:1',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'image' => 'nullable|image|max:2048'
+            'image' => 'nullable|image|max:2048',
+            'category_id' => 'required|exists:categories,id',
         ]);
 
         if ($request->hasFile('image')) {
-            // Delete old image
             if ($campaign->image) {
                 Storage::disk('public')->delete($campaign->image);
             }
@@ -109,9 +106,6 @@ class CampaignController extends Controller
             ->with('success', 'Campaign updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Campaign $campaign)
     {
         $this->authorize('delete', $campaign);
@@ -131,14 +125,82 @@ class CampaignController extends Controller
         return view('campaigns.donate', compact('campaign'));
     }
 
+    public function analytics(Campaign $campaign)
+    {
+        $this->authorize('view', $campaign);
+        $donations = $campaign->donations()->latest()->paginate(10);
+        $donationData = $campaign->donations()
+            ->selectRaw('DATE(created_at) as date, SUM(amount) as total')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        return view('campaigns.analytics', compact('campaign', 'donations', 'donationData'));
+    }
+
+    public function updates(Campaign $campaign)
+    {
+        $this->authorize('update', $campaign);
+        $updates = $campaign->updates()->latest()->get();
+        return view('campaigns.updates', compact('campaign', 'updates'));
+    }
+
+    public function storeUpdate(Request $request, Campaign $campaign)
+    {
+        $this->authorize('update', $campaign);
+
+        $validated = $request->validate([
+            'content' => 'required',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('campaign_updates', 'public');
+            $validated['image'] = $path;
+        }
+
+        $campaign->updates()->create($validated);
+
+        // Thông báo cho người theo dõi chiến dịch
+        $donors = $campaign->donations()->pluck('user_id')->unique();
+        foreach ($donors as $user_id) {
+            Notification::create([
+                'user_id' => $user_id,
+                'type' => 'campaign_update',
+                'message' => "Chiến dịch '{$campaign->title}' có cập nhật mới.",
+            ]);
+        }
+
+        return redirect()->route('campaigns.updates', $campaign)
+            ->with('success', 'Update added successfully.');
+    }
+
     public function adminIndex()
     {
         $this->authorize('viewAny', Campaign::class);
-
-        $campaigns = Campaign::with('user')
-            ->latest()
-            ->paginate(10);
-
+        $campaigns = Campaign::with('organizer')->latest()->paginate(10);
         return view('admin.campaigns.index', compact('campaigns'));
+    }
+
+    public function approval()
+    {
+        $this->authorize('viewAny', Campaign::class);
+        $campaigns = Campaign::where('status', 'pending')->with('organizer')->latest()->paginate(10);
+        return view('admin.campaigns.approval', compact('campaigns'));
+    }
+
+    public function approve(Request $request, Campaign $campaign)
+    {
+        $this->authorize('update', $campaign);
+        $campaign->update(['status' => 'active']);
+
+        Notification::create([
+            'user_id' => $campaign->organizer_id,
+            'type' => 'campaign_approved',
+            'message' => "Chiến dịch '{$campaign->title}' đã được phê duyệt.",
+        ]);
+
+        return redirect()->route('admin.campaigns.approval')
+            ->with('success', 'Campaign approved successfully.');
     }
 }
