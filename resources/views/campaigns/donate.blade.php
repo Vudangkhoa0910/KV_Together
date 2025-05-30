@@ -5,14 +5,14 @@
                 <div class="p-6">
                     <div class="mb-6">
                         <a href="{{ route('campaigns.show', $campaign) }}" class="text-blue-500 hover:text-blue-700">
-                            &larr; Quay lại chiến dịch
+                            ← Quay lại chiến dịch
                         </a>
                     </div>
 
                     <div class="max-w-2xl mx-auto">
                         <h1 class="text-3xl font-bold text-gray-900 mb-8">Quyên góp cho chiến dịch: {{ $campaign->title }}</h1>
 
-                        <form action="{{ route('donations.process') }}" method="POST" class="space-y-6">
+                        <form action="{{ route('donations.store') }}" method="POST" class="space-y-6">
                             @csrf
                             <input type="hidden" name="campaign_id" value="{{ $campaign->id }}">
 
@@ -81,4 +81,4 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-app-layout>
