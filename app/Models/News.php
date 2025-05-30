@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class News extends Model
 {
@@ -13,13 +13,18 @@ class News extends Model
         'title',
         'content',
         'image',
-        'author',
-        'is_published',
-        'published_at'
+        'author_id',
+        'status',
+        'published_at',
     ];
 
     protected $casts = [
-        'is_published' => 'boolean',
-        'published_at' => 'datetime'
+        'status' => 'string',
+        'published_at' => 'datetime',
     ];
+
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
 }
