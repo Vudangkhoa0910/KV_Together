@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Activity extends Model
 {
@@ -15,12 +15,19 @@ class Activity extends Model
         'date',
         'location',
         'image',
+        'status',
         'participants_count',
-        'status'
+        'organizer_id',
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'participants_count' => 'integer'
+        'date' => 'datetime',
+        'participants_count' => 'integer',
+        'status' => 'string',
     ];
+
+    public function organizer()
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
+    }
 }
