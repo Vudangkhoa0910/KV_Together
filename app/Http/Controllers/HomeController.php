@@ -3,37 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campaign;
+use App\Models\Donation;
+use App\Models\Activity;
 use App\Models\News;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
-     */
     public function index()
     {
-        $featuredCampaigns = Campaign::where('status', 'active')
-            ->orderBy('current_amount', 'desc')
-            ->take(3)
+        $query = Campaign::query();
+
+        if (Schema::hasColumn('campaigns', 'is_active')) {
+            $query->where('is_active', true);
+        }
+
+        $campaigns = $query->orderBy('created_at', 'desc')
+            ->take(6)
             ->get();
 
-        $latestNews = News::latest()
-            ->take(3)
-            ->get();
+        return view('home', compact('campaigns')); // Sửa 'welcome' thành 'home'
+    }
 
-        return view('welcome', compact('featuredCampaigns', 'latestNews'));
+    public function dashboard()
+    {
+        $totalCampaigns = Campaign::count();
+        $totalDonations = Donation::sum('amount');
+        $totalActivities = Activity::count();
+        $totalNews = News::count();
+
+        $recentCampaigns = Campaign::latest()->take(5)->get();
+        $recentDonations = Donation::with(['user', 'campaign'])->latest()->take(5)->get();
+
+        return view('admin.dashboard', compact(
+            'totalCampaigns',
+            'totalDonations',
+            'totalActivities',
+            'totalNews',
+            'recentCampaigns',
+            'recentDonations'
+        ));
     }
 }
