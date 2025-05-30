@@ -8,27 +8,18 @@ use Illuminate\Support\Facades\Storage;
 
 class NewsController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $news = News::latest()->paginate(9);
         return view('news.index', compact('news'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $this->authorize('create', News::class);
         return view('news.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $this->authorize('create', News::class);
@@ -36,7 +27,7 @@ class NewsController extends Controller
         $validated = $request->validate([
             'title' => 'required|max:255',
             'content' => 'required',
-            'image' => 'required|image|max:2048'
+            'image' => 'required|image|max:2048',
         ]);
 
         if ($request->hasFile('image')) {
@@ -44,7 +35,8 @@ class NewsController extends Controller
             $validated['image'] = $path;
         }
 
-        $validated['user_id'] = auth()->id();
+        $validated['author_id'] = auth()->id();
+        $validated['status'] = 'published';
 
         News::create($validated);
 
@@ -52,26 +44,17 @@ class NewsController extends Controller
             ->with('success', 'News article created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(News $news)
     {
         return view('news.show', compact('news'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(News $news)
     {
         $this->authorize('update', $news);
         return view('news.edit', compact('news'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, News $news)
     {
         $this->authorize('update', $news);
@@ -79,11 +62,10 @@ class NewsController extends Controller
         $validated = $request->validate([
             'title' => 'required|max:255',
             'content' => 'required',
-            'image' => 'nullable|image|max:2048'
+            'image' => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('image')) {
-            // Delete old image
             if ($news->image) {
                 Storage::disk('public')->delete($news->image);
             }
@@ -97,9 +79,6 @@ class NewsController extends Controller
             ->with('success', 'News article updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(News $news)
     {
         $this->authorize('delete', $news);
@@ -117,11 +96,7 @@ class NewsController extends Controller
     public function adminIndex()
     {
         $this->authorize('viewAny', News::class);
-
-        $news = News::with('user')
-            ->latest()
-            ->paginate(20);
-
+        $news = News::with('author')->latest()->paginate(20);
         return view('admin.news.index', compact('news'));
     }
 }
