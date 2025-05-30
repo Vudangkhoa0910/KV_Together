@@ -8,27 +8,18 @@ use Illuminate\Support\Facades\Storage;
 
 class ActivityController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $activities = Activity::latest()->paginate(9);
         return view('activities.index', compact('activities'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $this->authorize('create', Activity::class);
         return view('activities.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $this->authorize('create', Activity::class);
@@ -38,7 +29,8 @@ class ActivityController extends Controller
             'description' => 'required',
             'date' => 'required|date',
             'location' => 'required|max:255',
-            'image' => 'required|image|max:2048'
+            'image' => 'required|image|max:2048',
+            'participants_count' => 'nullable|integer|min:0',
         ]);
 
         if ($request->hasFile('image')) {
@@ -46,7 +38,8 @@ class ActivityController extends Controller
             $validated['image'] = $path;
         }
 
-        $validated['user_id'] = auth()->id();
+        $validated['organizer_id'] = auth()->id();
+        $validated['status'] = 'upcoming';
 
         Activity::create($validated);
 
@@ -54,26 +47,17 @@ class ActivityController extends Controller
             ->with('success', 'Activity created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Activity $activity)
     {
         return view('activities.show', compact('activity'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Activity $activity)
     {
         $this->authorize('update', $activity);
         return view('activities.edit', compact('activity'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Activity $activity)
     {
         $this->authorize('update', $activity);
@@ -83,11 +67,11 @@ class ActivityController extends Controller
             'description' => 'required',
             'date' => 'required|date',
             'location' => 'required|max:255',
-            'image' => 'nullable|image|max:2048'
+            'image' => 'nullable|image|max:2048',
+            'participants_count' => 'nullable|integer|min:0',
         ]);
 
         if ($request->hasFile('image')) {
-            // Delete old image
             if ($activity->image) {
                 Storage::disk('public')->delete($activity->image);
             }
@@ -101,9 +85,6 @@ class ActivityController extends Controller
             ->with('success', 'Activity updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Activity $activity)
     {
         $this->authorize('delete', $activity);
@@ -121,11 +102,7 @@ class ActivityController extends Controller
     public function adminIndex()
     {
         $this->authorize('viewAny', Activity::class);
-
-        $activities = Activity::with('user')
-            ->latest()
-            ->paginate(20);
-
+        $activities = Activity::with('organizer')->latest()->paginate(20);
         return view('admin.activities.index', compact('activities'));
     }
 }
