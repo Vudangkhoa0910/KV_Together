@@ -1,0 +1,12 @@
+/* Header styles */
+.header {
+    @apply bg-gradient-to-r from-orange-400 via-red-500 to-yellow-400 shadow-md;
+}
+
+.nav-link {
+    @apply hover:underline hover:decoration-yellow-300;
+}
+
+.nav-link.active {
+    @apply underline decoration-yellow-300;
+}

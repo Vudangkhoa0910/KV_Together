@@ -9,8 +9,8 @@ module.exports = {
         orange: {
           50: '#fff8f1',
           100: '#feecd3',
-          500: '#f97316', // orange-500
-          600: '#ea580c', // orange-600
+          500: '#f97316',
+          600: '#ea580c', 
         },
         red: {
           400: '#f87171',

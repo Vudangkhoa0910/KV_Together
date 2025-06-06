@@ -10,10 +10,10 @@ body {
 }
 
 .container {
-    max-width: 1900px;
-    margin: 0 auto;
-    padding: 0 2rem;
     width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
 @media (max-width: 768px) {
@@ -71,4 +71,4 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
-} 
+}

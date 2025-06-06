@@ -1,0 +1,4 @@
+/* Hero section styles */
+.hero {
+    @apply bg-gradient-to-b from-orange-50 to-white;
+}

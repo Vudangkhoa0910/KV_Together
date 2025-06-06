@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description');
-            $table->date('date');
-            $table->string('location');
             $table->string('image')->nullable();
-            $table->integer('participants_count')->default(0);
-            $table->enum('status', ['upcoming', 'ongoing', 'completed'])->default('upcoming');
+            $table->dateTime('date');
+            $table->string('location');
+            $table->enum('status', ['upcoming', 'ongoing', 'completed', 'cancelled'])->default('upcoming');
+            $table->integer('max_participants')->nullable();
             $table->timestamps();
         });
     }

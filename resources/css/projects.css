@@ -1,0 +1,4 @@
+/* Projects section styles */
+.project-card {
+    @apply bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300;
+}

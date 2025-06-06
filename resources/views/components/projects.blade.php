@@ -13,7 +13,7 @@
                     <div class="progress" style="width: 60%;"></div>
                 </div>
                 <p class="text-sm text-gray-600 mt-2">Đã đạt: 60% (12,000,000 VNĐ / 20,000,000 VNĐ)</p>
-                <a href="#" class="button-primary">Ủng hộ ngay</a>
+                <a href="{{ route('campaigns.show', 1) }}" class="button-primary">Ủng hộ ngay</a>
             </div>
         </div>
         <div class="project-card animate__animated animate__fadeIn" style="animation-delay: 0.4s;">
@@ -25,7 +25,7 @@
                     <div class="progress" style="width: 45%;"></div>
                 </div>
                 <p class="text-sm text-gray-600 mt-2">Đã đạt: 45% (9,000,000 VNĐ / 20,000,000 VNĐ)</p>
-                <a href="#" class="button-primary">Ủng hộ ngay</a>
+                <a href="{{ route('campaigns.show', 2) }}" class="button-primary">Ủng hộ ngay</a>
             </div>
         </div>
         <div class="project-card animate__animated animate__fadeIn" style="animation-delay: 0.6s;">
@@ -37,8 +37,8 @@
                     <div class="progress" style="width: 75%;"></div>
                 </div>
                 <p class="text-sm text-gray-600 mt-2">Đã đạt: 75% (15,000,000 VNĐ / 20,000,000 VNĐ)</p>
-                <a href="#" class="button-primary">Ủng hộ ngay</a>
+                <a href="{{ route('campaigns.show', 3) }}" class="button-primary">Ủng hộ ngay</a>
             </div>
         </div>
     </div>
-</section> 
+</section>

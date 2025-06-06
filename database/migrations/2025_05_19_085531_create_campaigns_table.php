@@ -20,7 +20,8 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->string('image')->nullable();
-            $table->enum('status', ['active', 'completed', 'cancelled'])->default('active');
+            $table->enum('status', ['draft', 'active', 'completed', 'cancelled'])->default('draft');
+            $table->foreignId('organizer_id')->constrained('users');
             $table->timestamps();
         });
     }

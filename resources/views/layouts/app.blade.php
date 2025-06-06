@@ -1,114 +1,158 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="vi">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'KV_Together') }}</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-    <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/header.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/hero.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/projects.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
 </head>
-<body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
+<body class="font-poppins antialiased">
+    @if(request()->is('auth/login') || request()->is('auth/register'))
+        <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+            @yield('content')
+        </div>
+    @else
         <!-- Navigation -->
-        <nav class="bg-white border-b border-gray-100">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex">
-                        <!-- Logo -->
-                        <div class="shrink-0 flex items-center">
-                            <a href="{{ route('home') }}">
-                                <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                            </a>
-                        </div>
+        <header>
+            <nav class="container">
+                <a href="{{ route('home') }}" class="logo-link">
+                    <span class="logo-text select-none">KV Together</span>
+                </a>
 
-                        <!-- Navigation Links -->
-                        <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                            <x-nav-link :href="route('home')" :active="request()->routeIs('home')">
-                                {{ __('Trang chủ') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*')">
-                                {{ __('Chiến dịch') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('activities.index')" :active="request()->routeIs('activities.*')">
-                                {{ __('Hoạt động') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('news.index')" :active="request()->routeIs('news.*')">
-                                {{ __('Tin tức') }}
-                            </x-nav-link>
-                        </div>
-                    </div>
+                <ul class="nav-links">
+                    <li><a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Trang chủ</a></li>
+                    <li><a href="{{ route('campaigns.index') }}" class="{{ request()->routeIs('campaigns.*') ? 'active' : '' }}">Chiến dịch</a></li>
+                    <li><a href="{{ route('news.index') }}" class="{{ request()->routeIs('news.*') ? 'active' : '' }}">Tin tức</a></li>
+                    <li><a href="{{ route('activities.index') }}" class="{{ request()->routeIs('activities.*') ? 'active' : '' }}">Hoạt động</a></li>
+                    <li><a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">Về chúng tôi</a></li>
+                </ul>
 
-                    <!-- Settings Dropdown -->
-                    <div class="hidden sm:flex sm:items-center sm:ml-6">
-                        @auth
-                            <x-dropdown align="right" width="48">
-                                <x-slot name="trigger">
-                                    <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                        <div>{{ Auth::user()->name }}</div>
-
-                                        <div class="ml-1">
-                                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </button>
-                                </x-slot>
-
-                                <x-slot name="content">
-                                    @if(Auth::user()->is_admin)
-                                        <x-dropdown-link :href="route('admin.dashboard')">
-                                            {{ __('Quản trị') }}
-                                        </x-dropdown-link>
+                <div class="auth-links">
+                    @guest
+                        <a href="{{ route('login') }}">Đăng nhập</a>
+                        <a href="{{ route('register') }}" class="register">Đăng ký</a>
+                    @else
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="flex items-center">
+                                @if(auth()->user()->profile_picture)
+                                    <img src="{{ Storage::url(auth()->user()->profile_picture) }}" class="h-8 w-8 rounded-full object-cover">
+                                @else
+                                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <span class="text-gray-500">{{ substr(auth()->user()->name, 0, 1) }}</span>
+                                    </div>
+                                @endif
+                                <span class="ml-2">{{ auth()->user()->name }}</span>
+                            </button>
+                            
+                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white">
+                                <div class="py-1">
+                                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Hồ sơ</a>
+                                    <a href="{{ route('notifications.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        Thông báo
+                                        @if(auth()->user()->unreadNotifications->count() > 0)
+                                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                {{ auth()->user()->unreadNotifications->count() }}
+                                            </span>
+                                        @endif
+                                    </a>
+                                    @if(auth()->user()->isAdmin())
+                                        <a href="{{ route('admin.campaigns.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Quản trị</a>
                                     @endif
-                                    <x-dropdown-link :href="route('profile.edit')">
-                                        {{ __('Hồ sơ') }}
-                                    </x-dropdown-link>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
-                                        <x-dropdown-link :href="route('logout')"
-                                                onclick="event.preventDefault();
-                                                            this.closest('form').submit();">
-                                            {{ __('Đăng xuất') }}
-                                        </x-dropdown-link>
+                                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Đăng xuất
+                                        </button>
                                     </form>
-                                </x-slot>
-                            </x-dropdown>
-                        @else
-                            <a href="{{ route('login') }}" class="text-sm text-gray-700 underline">Đăng nhập</a>
-                            <a href="{{ route('register') }}" class="ml-4 text-sm text-gray-700 underline">Đăng ký</a>
-                        @endauth
-                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endguest
                 </div>
-            </div>
-        </nav>
 
-        <!-- Page Content -->
-        <main>
-            @if (session('success'))
-                <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                        <span class="block sm:inline">{{ session('success') }}</span>
-                    </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </div>
-            @endif
+            </nav>
+        </header>
 
-            @if (session('error'))
-                <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                        <span class="block sm:inline">{{ session('error') }}</span>
-                    </div>
-                </div>
-            @endif
+        <!-- Mobile Menu -->
+        <div class="mobile-menu-overlay"></div>
+        <div class="mobile-menu">
+            <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Trang chủ</a>
+            <a href="{{ route('campaigns.index') }}" class="{{ request()->routeIs('campaigns.*') ? 'active' : '' }}">Chiến dịch</a>
+            <a href="{{ route('news.index') }}" class="{{ request()->routeIs('news.*') ? 'active' : '' }}">Tin tức</a>
+            <a href="{{ route('activities.index') }}" class="{{ request()->routeIs('activities.*') ? 'active' : '' }}">Hoạt động</a>
+            <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">Về chúng tôi</a>
+            @guest
+                <a href="{{ route('login') }}">Đăng nhập</a>
+                <a href="{{ route('register') }}" class="register">Đăng ký</a>
+            @else
+                <a href="{{ route('profile.edit') }}">Hồ sơ</a>
+                <a href="{{ route('notifications.index') }}">Thông báo</a>
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.campaigns.index') }}">Quản trị</a>
+                @endif
+                <form method="POST" action="{{ route('logout') }}" class="block">
+                    @csrf
+                    <button type="submit" class="w-full text-left px-4 py-2">Đăng xuất</button>
+                </form>
+            @endguest
+        </div>
 
-            {{ $slot }}
-        </main>
-    </div>
+        <!-- Main Content -->
+        @yield('content')
+
+        <!-- Footer -->
+        @include('components.footer')
+    @endif
+
+    <!-- Scripts -->
+    <script>
+        // Hamburger Menu Toggle
+        const hamburger = document.querySelector('.hamburger');
+        const mobileMenu = document.querySelector('.mobile-menu');
+        const overlay = document.querySelector('.mobile-menu-overlay');
+
+        function toggleMenu() {
+            hamburger.classList.toggle('active');
+            mobileMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+        }
+
+        if (hamburger && mobileMenu && overlay) {
+            hamburger.addEventListener('click', toggleMenu);
+            overlay.addEventListener('click', toggleMenu);
+
+            // Close menu when clicking links
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', toggleMenu);
+            });
+
+            // Close menu on window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768 && mobileMenu.classList.contains('active')) {
+                    toggleMenu();
+                }
+            });
+        }
+    </script>
 </body>
 </html>

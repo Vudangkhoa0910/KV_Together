@@ -2,72 +2,57 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
+                <div class="p-6 bg-white border-b border-gray-200">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Hoạt động từ thiện</h2>
-                        @if(auth()->user() && auth()->user()->is_admin)
-                            <a href="{{ route('activities.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                Tạo hoạt động mới
+                        <h2 class="text-2xl font-bold text-gray-800">Upcoming Activities</h2>
+                        @can('create', App\Models\Activity::class)
+                            <a href="{{ route('activities.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                Create Activity
                             </a>
-                        @endif
+                        @endcan
                     </div>
 
-                    <!-- Filters -->
-                    <div class="mb-6">
-                        <form action="{{ route('activities.index') }}" method="GET" class="flex gap-4">
-                            <select name="status" class="rounded-md border-gray-300">
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="upcoming" {{ request('status') == 'upcoming' ? 'selected' : '' }}>Sắp diễn ra</option>
-                                <option value="ongoing" {{ request('status') == 'ongoing' ? 'selected' : '' }}>Đang diễn ra</option>
-                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Đã kết thúc</option>
-                            </select>
-                            <button type="submit" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                                Lọc
-                            </button>
-                        </form>
-                    </div>
+                    @if(session('success'))
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <span class="block sm:inline">{{ session('success') }}</span>
+                        </div>
+                    @endif
 
-                    <!-- Activities Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($activities as $activity)
-                            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                                @if($activity->image)
-                                    <img src="{{ asset('storage/' . $activity->image) }}" alt="{{ $activity->title }}" class="w-full h-48 object-cover">
-                                @endif
-                                <div class="p-4">
-                                    <h3 class="text-lg font-semibold mb-2">{{ $activity->title }}</h3>
-                                    <p class="text-gray-600 mb-4">{{ Str::limit($activity->description, 100) }}</p>
-                                    <div class="grid grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <p class="text-sm text-gray-600">Ngày diễn ra</p>
-                                            <p class="font-semibold">{{ $activity->date->format('d/m/Y') }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-600">Địa điểm</p>
-                                            <p class="font-semibold">{{ $activity->location }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <p class="text-sm text-gray-600">Số người tham gia</p>
-                                            <p class="font-semibold">{{ $activity->participants_count }}</p>
-                                        </div>
-                                        <div>
-                                            <span class="px-2 py-1 text-sm rounded-full
-                                                @if($activity->status == 'upcoming') bg-yellow-100 text-yellow-800
-                                                @elseif($activity->status == 'ongoing') bg-green-100 text-green-800
-                                                @else bg-gray-100 text-gray-800
-                                                @endif">
-                                                @if($activity->status == 'upcoming') Sắp diễn ra
-                                                @elseif($activity->status == 'ongoing') Đang diễn ra
-                                                @else Đã kết thúc
-                                                @endif
+                            <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                                <div class="relative pb-48">
+                                    <img class="absolute h-full w-full object-cover" src="{{ Storage::url($activity->image) }}" alt="{{ $activity->title }}">
+                                </div>
+                                <div class="p-6">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0">
+                                            <span class="inline-flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
                                             </span>
+                                        </div>
+                                        <div class="ml-4">
+                                            <h3 class="text-lg font-medium text-gray-900">{{ $activity->title }}</h3>
+                                            <p class="text-sm text-gray-500">{{ $activity->date->format('M d, Y') }}</p>
                                         </div>
                                     </div>
                                     <div class="mt-4">
-                                        <a href="{{ route('activities.show', $activity) }}" class="block text-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                            Xem chi tiết
+                                        <p class="text-sm text-gray-500">{{ Str::limit($activity->description, 150) }}</p>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex items-center text-sm text-gray-500">
+                                            <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span>{{ $activity->location }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6">
+                                        <a href="{{ route('activities.show', $activity) }}" class="text-indigo-600 hover:text-indigo-900">
+                                            View Details <span aria-hidden="true">&rarr;</span>
                                         </a>
                                     </div>
                                 </div>
@@ -75,7 +60,6 @@
                         @endforeach
                     </div>
 
-                    <!-- Pagination -->
                     <div class="mt-6">
                         {{ $activities->links() }}
                     </div>
