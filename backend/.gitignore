@@ -1,0 +1,40 @@
+# Laravel specific
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+.env
+.env.backup
+.env.production
+.env.*.local
+.phpunit.result.cache
+.phpactor.json
+
+# Composer
+composer.phar
+auth.json
+
+# IDE & Editors
+/.fleet
+/.idea
+/.vscode
+/.nova
+/.zed
+
+# Logs
+npm-debug.log
+yarn-error.log
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 

@@ -1,0 +1,225 @@
+/* Hero Section */
+.hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 80px 0;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4));
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    color: white;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 4.5rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero h1 span {
+    display: inline-block;
+}
+
+.hero h1 span:first-child {
+    color: #ff6b35;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero h1 span:last-child {
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero p {
+    font-size: 1.25rem;
+    margin-bottom: 30px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.primary-button {
+    background-color: #ff6b35;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+.primary-button:hover {
+    background-color: #ff8255;
+    transform: translateY(-2px);
+}
+
+.secondary-button {
+    background-color: transparent;
+    color: #ffd700;
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 2px solid #ffd700;
+    transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+    background-color: #ffd700;
+    color: #333;
+    transform: translateY(-2px);
+}
+
+.hero-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Hero Stats Section - sau project */
+.hero-stats {
+    position: relative;
+    width: 100%;
+    background: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 24px 0 rgba(30,41,59,0.07);
+    padding: 2.5rem 0 2rem 0;
+    margin: 2.5rem auto 2rem auto;
+    max-width: 1200px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+.hero-stats:hover {
+    box-shadow: 0 8px 32px 0 rgba(30,41,59,0.13);
+}
+.hero-stats-bg {
+    display: none;
+}
+.hero-stats-content {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+.hero-stats-title {
+    color: #ea580c;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    letter-spacing: -1px;
+}
+.hero-stats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2.5rem;
+}
+.hero-stat {
+    min-width: 120px;
+    flex: 1 1 120px;
+    background: #f9fafb;
+    border-radius: 1rem;
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+    box-shadow: 0 2px 8px 0 rgba(30,41,59,0.04);
+    margin: 0 0.5rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.hero-stat:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 6px 18px 0 rgba(30,41,59,0.10);
+}
+.hero-stat-label {
+    color: #64748b;
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+.hero-stat-value {
+    color: #ea580c;
+    font-size: 2.1rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 0.2rem;
+    font-family: 'Poppins', Arial, sans-serif;
+}
+@media (max-width: 900px) {
+    .hero-stats-grid {
+        gap: 1.2rem;
+    }
+    .hero-stats-content {
+        padding: 0 0.5rem;
+    }
+    .hero-stats-title {
+        font-size: 1.3rem;
+    }
+    .hero-stat-value {
+        font-size: 1.3rem;
+    }
+}
+
+.hero-stats, .hero-stats * {
+    font-family: Arial, sans-serif !important;
+}
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 3rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .primary-button,
+    .secondary-button {
+        width: 100%;
+        max-width: 300px;
+        text-align: center;
+    }
+}
