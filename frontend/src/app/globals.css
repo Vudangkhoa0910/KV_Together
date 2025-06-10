@@ -3,10 +3,33 @@
 @tailwind utilities;
 
 :root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
   --primary-color: #ff6b35;
   --secondary-color: #ff8255;
   --text-color: #333;
   --background-color: #f8f9fa;
+}
+
+@layer base {
+  body {
+    @apply text-gray-900 bg-white;
+  }
+}
+
+@layer components {
+  .gradient-overlay {
+    @apply absolute inset-0 bg-gradient-to-r from-orange-500/70 to-orange-400/50;
+  }
+
+  .form-input {
+    @apply appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm;
+  }
+
+  .btn-primary {
+    @apply w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-orange-400 hover:from-orange-700 hover:to-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500;
+  }
 }
 
 * {
@@ -21,7 +44,7 @@ body {
   overflow-x: hidden;
   font-family: 'Inter', sans-serif;
   color: var(--text-color);
-  background: white;
+  background: var(--background-color);
 }
 
 a {
@@ -44,4 +67,20 @@ img {
   html {
     font-size: 14px;
   }
+}
+
+.form-radio {
+  @apply text-orange-600 border-gray-300 focus:ring-orange-500;
+}
+
+.form-checkbox {
+  @apply text-orange-600 border-gray-300 rounded focus:ring-orange-500;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+textarea {
+  @apply appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm;
 }

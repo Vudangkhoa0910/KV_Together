@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #E84D1C;
+  --primary-light: #FFA726;
+  --header-height: 70px;
+  --footer-height: 300px;
+}
+
+body {
+  @apply bg-gray-50;
+}
+
+.main-content {
+  min-height: calc(100vh - var(--header-height) - var(--footer-height));
+  margin-top: var(--header-height);
+  padding-bottom: 2rem;
+}
+
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Header Styles */
+.header {
+  @apply fixed top-0 left-0 right-0 z-50;
+  height: var(--header-height);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+}
+
+.header-content {
+  @apply h-full flex items-center justify-between;
+}
+
+/* Footer Styles */
+.footer {
+  background: #1F2937;
+  color: white;
+  height: var(--footer-height);
+}
+
+/* Button Styles */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors;
+}
+
+.btn-primary {
+  @apply bg-orange-500 text-white hover:bg-orange-600;
+}
+
+.btn-secondary {
+  @apply bg-white text-orange-500 border border-orange-500 hover:bg-orange-50;
+}
+
+.btn-outline {
+  @apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+}
+
+/* Card Styles */
+.card {
+  @apply bg-white rounded-lg shadow-sm overflow-hidden;
+}
+
+.card-header {
+  @apply p-6 border-b border-gray-100;
+}
+
+.card-body {
+  @apply p-6;
+}
+
+.card-footer {
+  @apply p-6 bg-gray-50 border-t border-gray-100;
+}
+
+/* Form Styles */
+.form-group {
+  @apply mb-4;
+}
+
+.form-label {
+  @apply block text-gray-700 font-semibold mb-2;
+}
+
+.form-input {
+  @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500;
+}
+
+.form-select {
+  @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500;
+}
+
+.form-textarea {
+  @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500;
+}
+
+/* Progress Bar */
+.progress-bar {
+  @apply w-full bg-gray-200 rounded-full h-2;
+}
+
+.progress-bar-fill {
+  @apply bg-orange-500 h-2 rounded-full transition-all duration-300;
+}
+
+/* Badge Styles */
+.badge {
+  @apply px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.badge-primary {
+  @apply bg-orange-100 text-orange-600;
+}
+
+.badge-secondary {
+  @apply bg-gray-100 text-gray-600;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-600;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-600;
+}
+
+.badge-danger {
+  @apply bg-red-100 text-red-600;
+}
+
+/* Section Styles */
+.section {
+  @apply py-12;
+}
+
+.section-title {
+  @apply text-3xl font-bold mb-8;
+}
+
+.section-subtitle {
+  @apply text-xl text-gray-600 mb-12;
+}
+
+/* Grid Styles */
+.grid-cards {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+}
+
+/* Tab Styles */
+.tabs {
+  @apply flex border-b;
+}
+
+.tab {
+  @apply px-6 py-4 font-semibold;
+}
+
+.tab-active {
+  @apply text-orange-500 border-b-2 border-orange-500;
+}
+
+.tab-inactive {
+  @apply text-gray-500;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    @apply px-4;
+  }
+  
+  .section {
+    @apply py-8;
+  }
+  
+  .section-title {
+    @apply text-2xl;
+  }
+  
+  .section-subtitle {
+    @apply text-lg mb-8;
+  }
+} 
