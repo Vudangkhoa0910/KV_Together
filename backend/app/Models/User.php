@@ -15,13 +15,14 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
+        'role', // 'user', 'fundraiser', 'admin'
+        'status', // 'active', 'pending', 'rejected' - for fundraiser approval
         'is_admin',
-        'role',
         'is_verified',
         'profile_picture',
         'bio',
-        'phone',
         'address',
     ];
 
@@ -63,18 +64,50 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    public function isAdmin(): bool
+    public function fundraiserProfile()
     {
-        return $this->role === 'admin';
+        return $this->hasOne(FundraiserProfile::class);
     }
 
-    public function isAmbassador(): bool
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole($role)
     {
-        return $this->role === 'ambassador';
+        return $this->role === $role;
     }
 
-    public function isOrganization(): bool
+    /**
+     * Check if user has admin role
+     */
+    public function isAdmin()
     {
-        return $this->role === 'organization';
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Check if user has staff role
+     */
+    public function isStaff()
+    {
+        return $this->hasRole('staff');
+    }
+
+    /**
+     * Check if user has regular user role
+     */
+    public function isUser()
+    {
+        return $this->hasRole('user');
+    }
+
+    public function isFundraiser()
+    {
+        return $this->role === 'fundraiser';
+    }
+
+    public function isPendingFundraiser()
+    {
+        return $this->role === 'fundraiser' && $this->status === 'pending';
     }
 }
