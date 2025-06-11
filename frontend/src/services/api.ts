@@ -22,9 +22,19 @@ export interface Stats {
 
 export const api = {
   async getFeaturedCampaigns(): Promise<Campaign[]> {
-    const response = await fetch(`${API_URL}/campaigns/featured`);
-    if (!response.ok) throw new Error('Failed to fetch featured campaigns');
-    return response.json();
+    try {
+      const response = await fetch(`${API_URL}/campaigns/featured`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to fetch featured campaigns');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching featured campaigns:', error);
+      throw error;
+    }
   },
 
   async getAllCampaigns(page = 1): Promise<{ data: Campaign[]; meta: any }> {
@@ -40,9 +50,19 @@ export const api = {
   },
 
   async getStats(): Promise<Stats> {
-    const response = await fetch(`${API_URL}/stats`);
-    if (!response.ok) throw new Error('Failed to fetch stats');
-    return response.json();
+    try {
+      const response = await fetch(`${API_URL}/stats`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to fetch stats');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      throw error;
+    }
   },
 
   async donate(campaignId: number, amount: number, message?: string): Promise<any> {
