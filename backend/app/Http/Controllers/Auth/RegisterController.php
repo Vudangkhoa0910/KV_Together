@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Role;
 use App\Models\FundraiserProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
@@ -20,77 +23,91 @@ class RegisterController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'required|string|max:20|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:user,fundraiser',
-            'address' => 'nullable|string|max:255',
-            'id_card' => 'nullable|string|max:50',
-            'registration_reason' => 'nullable|string',
-            'fundraiser_type' => 'required_if:role,fundraiser|in:personal,organization',
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'user_type' => 'required|in:user,fundraiser',
+            'address' => 'required_if:user_type,fundraiser|string|max:255',
+            'id_card' => 'required_if:user_type,fundraiser|string|max:50',
+            'registration_reason' => 'required_if:user_type,fundraiser|string',
+            'fundraiser_type' => 'required_if:user_type,fundraiser|in:personal,organization',
             'organization_name' => 'required_if:fundraiser_type,organization|string|max:255',
+        ], [
+            'name.required' => 'Họ và tên là bắt buộc',
+            'email.required' => 'Email là bắt buộc',
+            'email.email' => 'Email không hợp lệ',
+            'email.unique' => 'Email đã được sử dụng',
+            'phone.required' => 'Số điện thoại là bắt buộc',
+            'phone.unique' => 'Số điện thoại đã được sử dụng',
+            'password.required' => 'Mật khẩu là bắt buộc',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
+            'password.confirmed' => 'Mật khẩu xác nhận không khớp',
+            'address.required_if' => 'Địa chỉ là bắt buộc đối với người gây quỹ',
+            'id_card.required_if' => 'CCCD/CMND là bắt buộc đối với người gây quỹ',
+            'registration_reason.required_if' => 'Lý do đăng ký là bắt buộc đối với người gây quỹ',
+            'organization_name.required_if' => 'Tên tổ chức là bắt buộc',
         ]);
 
         if ($validator->fails()) {
             Log::error('Validation failed', ['errors' => $validator->errors()]);
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
-            Log::info('Starting user creation with data:', [
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'role' => $request->role
-            ]);
+            DB::beginTransaction();
 
+            // Get appropriate role
+            $role = Role::where('slug', $request->user_type)->firstOrFail();
+
+            // Create user
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password' => Hash::make($request->password),
-                'role' => $request->role,
-                'status' => $request->role === 'fundraiser' ? 'pending' : 'active',
+                'role_id' => $role->id,
+                'status' => $request->user_type === 'fundraiser' ? 'pending' : 'active',
                 'address' => $request->address,
                 'id_card' => $request->id_card,
                 'registration_reason' => $request->registration_reason,
                 'fundraiser_type' => $request->fundraiser_type,
             ]);
 
-            if ($request->role === 'fundraiser' && $request->fundraiser_type === 'organization') {
+            // Create fundraiser profile if needed
+            if ($request->user_type === 'fundraiser' && $request->fundraiser_type === 'organization') {
                 FundraiserProfile::create([
                     'user_id' => $user->id,
                     'organization_name' => $request->organization_name,
                 ]);
             }
 
+            // Create token
             $token = $user->createToken('auth_token')->plainTextToken;
+
+            DB::commit();
 
             Log::info('Registration successful', ['user_id' => $user->id]);
 
             return response()->json([
-                'message' => 'Registration successful',
+                'message' => $request->user_type === 'fundraiser' 
+                    ? 'Đăng ký thành công. Tài khoản của bạn đang chờ phê duyệt.' 
+                    : 'Đăng ký thành công',
                 'user' => $user,
                 'token' => $token,
             ], 201);
+
         } catch (\Exception $e) {
+            DB::rollBack();
+            
             Log::error('Registration failed', [
                 'error' => $e->getMessage(),
-                'sql' => $e instanceof \Illuminate\Database\QueryException ? $e->getSql() : null,
-                'bindings' => $e instanceof \Illuminate\Database\QueryException ? $e->getBindings() : null,
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all(),
-                'exception_class' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
-                'message' => 'Registration failed',
-                'error' => $e->getMessage(),
-                'details' => env('APP_DEBUG') ? [
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'sql_error' => $e instanceof \Illuminate\Database\QueryException ? $e->getMessage() : null
-                ] : null
+                'message' => 'Đăng ký thất bại',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
