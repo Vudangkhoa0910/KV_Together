@@ -1,0 +1,39 @@
+.scroll-to-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px; /* Chuyển sang bên phải */
+  width: 60px; /* To hơn */
+  height: 60px; /* To hơn */
+  background: linear-gradient(135deg, #ff8c38 0%, #ff6b35 100%); /* Gradient màu cam */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  z-index: 1000;
+}
+
+.scroll-to-top.visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+}
+
+.scroll-to-top:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c38 100%);
+}
+
+.scroll-to-top svg {
+  width: 24px; /* Icon to hơn */
+  height: 24px; /* Icon to hơn */
+  fill: currentColor;
+}
