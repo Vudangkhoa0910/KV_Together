@@ -25,7 +25,7 @@ axios.defaults.withCredentials = true;
 
 export default {
     async getCsrfCookie() {
-        await axios.get('http://localhost:8000/sanctum/csrf-cookie');
+        await axios.get(`${API_URL}/csrf-cookie`);
     },
 
     async login(data: LoginData): Promise<AuthResponse> {

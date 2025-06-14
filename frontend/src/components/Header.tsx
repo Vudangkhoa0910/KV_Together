@@ -2,12 +2,32 @@
 
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import NavigationMenu from './navigation/NavigationMenu';
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   return (
     <header className="header">
@@ -21,13 +41,20 @@ export default function Header() {
         <div className="auth-buttons">
           {isAuthenticated && user ? (
             <div className="user-menu-container" ref={dropdownRef}>
-              <div className="user-menu-trigger">
+              <div
+                className="user-menu-trigger"
+                onClick={() => setDropdownOpen((open) => !open)}
+                tabIndex={0}
+                role="button"
+                aria-haspopup="true"
+                aria-expanded={dropdownOpen}
+              >
                 <div className="user-avatar">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="user-name">{user.name}</span>
               </div>
-              <div className="user-dropdown">
+              <div className={`user-dropdown${dropdownOpen ? ' show' : ''}`}>
                 <div className="user-info">
                   <div className="user-avatar-large">
                     {user.name.charAt(0).toUpperCase()}

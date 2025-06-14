@@ -2,15 +2,51 @@
 
 @section('content')
 <div class="container mx-auto py-12 px-4">
-    <div class="grid md:grid-cols-2 gap-10">
-        <div>
-            <img src="{{ Storage::url($campaign->image) ?? 'https://source.unsplash.com/600x400/?help' }}" class="rounded-xl shadow" />
-        </div>
-        <div>
-            <h1 class="text-3xl font-bold text-orange-700 mb-4">{{ $campaign->title }}</h1>
-            <p class="text-gray-700 mb-4">{{ $campaign->description }}</p>
-            <p class="text-sm text-gray-500">Danh mục: {{ $campaign->category->name ?? 'Không có' }}</p>
-            <p class="text-sm text-gray-500">Số tiền đã quyên góp: {{ number_format($campaign->current_amount) }}đ / {{ number_format($campaign->target_amount) }}đ</p>
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Left column - Campaign content -->
+        <div class="lg:w-2/3">
+            <!-- Image gallery -->
+            <div class="mb-8">
+                <div class="rounded-xl shadow overflow-hidden">
+                    <img src="{{ Storage::url($campaign->image) ?? 'https://source.unsplash.com/600x400/?help' }}" 
+                        class="w-full h-[400px] object-cover" alt="{{ $campaign->title }}" />
+                </div>
+                @if($campaign->images)
+                <div class="grid grid-cols-4 gap-4 mt-4">
+                    @foreach($campaign->images as $image)
+                    <div class="rounded-lg overflow-hidden shadow cursor-pointer hover:opacity-80 transition">
+                        <img src="{{ Storage::url($image) }}" class="w-full h-20 object-cover" alt="Gallery image" />
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+
+            <!-- Campaign info -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h1 class="text-3xl font-bold text-orange-700 mb-4">{{ $campaign->title }}</h1>
+                <div class="flex items-center gap-4 text-sm text-gray-500 mb-6">
+                    <span class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm6.5-4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm7 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zm-7 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm7 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                        </svg>
+                        {{ $campaign->category->name ?? 'Không có danh mục' }}
+                    </span>
+                </div>
+
+                <div class="mb-6">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                        <div class="bg-gradient-to-r from-orange-500 to-orange-600 h-2.5 rounded-full" 
+                            style="width: {{ min(($campaign->current_amount / $campaign->target_amount) * 100, 100) }}%">
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="font-semibold text-gray-600">{{ number_format($campaign->current_amount) }}đ</span>
+                        <span class="text-gray-500">Mục tiêu: {{ number_format($campaign->target_amount) }}đ</span>
+                    </div>
+                </div>
+
+                <p class="text-gray-700 mb-6 leading-relaxed">{{ $campaign->description }}</p>
             <p class="text-sm text-gray-500">Trạng thái: {{ $campaign->status }}</p>
 
             @auth
