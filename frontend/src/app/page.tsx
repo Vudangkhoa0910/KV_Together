@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { api, Campaign, Stats } from "@/services/api";
+import ScrollToTop from "@/components/ScrollToTop";
 
 async function getFeaturedCampaigns(): Promise<Campaign[]> {
   try {
@@ -8,28 +9,7 @@ async function getFeaturedCampaigns(): Promise<Campaign[]> {
     console.error('Error fetching featured campaigns:', error);
     // Return placeholder data
     return [
-      {
-        id: 1,
-        title: "Nước sạch cho trường học",
-        description: "Giúp các em học sinh vùng cao có nước sạch để sử dụng",
-        target_amount: 50000000,
-        current_amount: 25000000,
-        image_url: "/images/bg.jpeg",
-        is_featured: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        title: "Thư viện tóc",
-        description: "Hỗ trợ bệnh nhân ung thư có tóc giả để tự tin hơn",
-        target_amount: 100000000,
-        current_amount: 75000000,
-        image_url: "/images/bg.jpeg",
-        is_featured: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
+      
     ];
   }
 }
@@ -39,7 +19,6 @@ async function getStats(): Promise<Stats> {
     return await api.getStats();
   } catch (error) {
     console.error('Error fetching stats:', error);
-    // Return placeholder data
     return {
       projects: 12,
       ambassadors: 50,
@@ -67,18 +46,39 @@ export default async function Home() {
           </h1>
           <p>Tham gia và ủng hộ các chiến dịch ý nghĩa, giúp đỡ cộng đồng và tạo nên sự thay đổi tích cực.</p>
           <div className="hero-buttons">
-            <a href="/chien-dich" className="primary-button">Khám phá chiến dịch</a>
-            <a href="/dang-ky" className="secondary-button">Trở thành sứ giả</a>
+            <a href="/campaigns" className="btn-primary">Khám phá chiến dịch</a>
+            <a href="/register" className="btn-secondary">Trở thành sứ giả</a>
           </div>
         </div>
         <div className="hero-image">
-          <Image 
-            src="/images/bg.jpeg" 
-            alt="Hero background" 
-            width={1920}
-            height={1080}
-            priority
-          />
+          <div className="hero-image-wrapper">
+            <Image 
+              src="/images/bg.jpeg" 
+              alt="Together we make a difference"
+              width={800}
+              height={600}
+              priority
+              className="main-image"
+            />
+          </div>
+          <div className="hero-image-wrapper">
+            <Image 
+              src="/images/bg_2.jpg" 
+              alt="Community support"
+              width={800}
+              height={450}
+              priority
+            />
+          </div>
+          <div className="hero-image-wrapper">
+            <Image 
+              src="/images/bg_3.jpg" 
+              alt="Making impact"
+              width={800}
+              height={450}
+              priority
+            />
+          </div>
         </div>
       </section>
 
@@ -141,6 +141,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
-    </div>
+      
+      <ScrollToTop />    </div>
   );
 }

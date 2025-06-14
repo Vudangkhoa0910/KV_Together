@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import registerBg from '../../../../public/images/Register.jpg';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export default function Register() {
   const [error, setError] = useState('');
@@ -14,6 +14,7 @@ export default function Register() {
   const [organizationType, setOrganizationType] = useState('personal');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const router = useRouter();
+  const { registerUser } = useAuth();
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
   const password = watch('password');
 
@@ -24,16 +25,26 @@ export default function Register() {
     }
     
     try {
-      const response = await axios.post('http://localhost:8000/api/register', {
-        ...data,
-        role,
-        organization_type: role === 'fundraiser' ? organizationType : undefined,
-      });
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        router.push('/');
-      }
+      const registrationData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+        user_type: role,
+        ...(role === 'fundraiser' && {
+          address: data.address,
+          id_card: data.id_number,
+          registration_reason: data.reason,
+          fundraiser_type: organizationType,
+          ...(organizationType === 'organization' && {
+            organization_name: data.organization_name
+          })
+        })
+      };
+
+      await registerUser(registrationData);
+      router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Đăng ký thất bại');
     }
