@@ -6,76 +6,260 @@ use App\Models\Campaign;
 use App\Models\Category;
 use App\Models\CampaignUpdate;
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class CampaignController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'featured']);
+    }
+
     public function index()
     {
-        $categories = Category::all();
-        $query = Campaign::where('status', 'active');
+        try {
+            $query = Campaign::with(['categories', 'organizer'])
+                ->withCount('donations');
 
-        if (request('category_id')) {
-            $query->where('category_id', request('category_id'));
+            if (request('category')) {
+                $categorySlug = request('category');
+                $query->whereHas('categories', function($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            }
+
+            if (request('search')) {
+                $query->search(request('search'));
+            }
+
+            // Mặc định chỉ lấy campaigns đang active
+            $query->where('status', 'active');
+
+            // Sắp xếp
+            switch(request('sort', 'newest')) {
+                case 'oldest':
+                    $query->oldest();
+                    break;
+                case 'amount':
+                    $query->orderByDesc('current_amount');
+                    break;
+                case 'deadline':
+                    $query->orderBy('end_date');
+                    break;
+                case 'newest':
+                default:
+                    $query->latest();
+                    break;
+            }
+
+            $campaigns = $query->paginate(9);
+           
+           // Add image URLs and donations count
+           $campaignsData = $campaigns->items();
+           foreach ($campaignsData as $campaign) {
+               $campaign->image_url = $campaign->getImageUrlAttribute();
+               $campaign->images_url = $campaign->getImagesUrlAttribute();
+           }
+
+            return response()->json([
+                'data' => $campaignsData,
+                'meta' => [
+                    'current_page' => $campaigns->currentPage(),
+                    'last_page' => $campaigns->lastPage(),
+                    'total' => $campaigns->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching campaigns:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Có lỗi xảy ra khi tải danh sách chiến dịch'], 500);
         }
-
-        $campaigns = $query->orderBy('created_at', 'desc')->paginate(9);
-
-        return view('campaigns.index', compact('campaigns', 'categories'));
     }
 
     public function create()
     {
+        $this->authorize('create', Campaign::class);
+        
         $categories = Category::all();
-        return view('campaigns.create', compact('categories'));
+        return response()->json(['categories' => $categories]);
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Campaign::class);
+
         $validated = $request->validate([
-            'title' => 'required|max:255',
-            'description' => 'required',
-            'target_amount' => 'required|numeric|min:1',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'image' => 'required|image|max:2048',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'target_amount' => 'required|numeric|min:1000000',
+            'end_date' => 'required|date|after:today',
             'category_id' => 'required|exists:categories,id',
+            'image' => 'required|image|max:2048',
+        ], [
+            'title.required' => 'Tiêu đề chiến dịch là bắt buộc',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
+            'description.required' => 'Mô tả chiến dịch là bắt buộc',
+            'target_amount.required' => 'Số tiền mục tiêu là bắt buộc',
+            'target_amount.min' => 'Số tiền mục tiêu tối thiểu là 1.000.000đ',
+            'end_date.required' => 'Ngày kết thúc là bắt buộc',
+            'end_date.after' => 'Ngày kết thúc phải sau ngày hôm nay',
+            'category_id.required' => 'Danh mục là bắt buộc',
+            'category_id.exists' => 'Danh mục không tồn tại',
+            'image.required' => 'Hình ảnh chiến dịch là bắt buộc',
+            'image.image' => 'File phải là hình ảnh',
+            'image.max' => 'Kích thước hình ảnh không được vượt quá 2MB',
         ]);
 
+        try {
+        $images = [];
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('campaigns', 'public');
-            $validated['image'] = $path;
+            // Make sure we store images without backslashes
+            $path = str_replace('\\', '', $request->file('image')->store('campaigns', 'public'));
+            $images[] = $path;
+            $validated['images'] = $images;
+            $validated['image'] = $path; // For backward compatibility
         }
 
         $validated['organizer_id'] = auth()->id();
         $validated['current_amount'] = 0;
-        $validated['status'] = 'pending'; // Chờ phê duyệt
+            $validated['status'] = 'pending';
 
         $campaign = Campaign::create($validated);
 
-        // Thông báo cho quản trị viên
-        Notification::create([
-            'user_id' => auth()->id(),
-            'type' => 'campaign_submitted',
-            'message' => "Chiến dịch '{$campaign->title}' đã được gửi để phê duyệt.",
-        ]);
+            // Notify admins about new campaign
+            $admins = User::whereHas('role', function($query) {
+                $query->where('slug', 'admin');
+            })->get();
 
-        return redirect()->route('campaigns.index')
-            ->with('success', 'Campaign submitted for approval.');
+            foreach ($admins as $admin) {
+        Notification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'new_campaign',
+                    'message' => "Chiến dịch mới '{$campaign->title}' cần được phê duyệt.",
+                    'data' => ['campaign_id' => $campaign->id]
+                ]);
+            }
+
+            Log::info('Campaign created', ['campaign_id' => $campaign->id, 'user_id' => auth()->id()]);
+
+            return response()->json([
+                'message' => 'Chiến dịch đã được tạo và đang chờ phê duyệt.',
+                'campaign' => $campaign
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Campaign creation failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            if (isset($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi tạo chiến dịch.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function show(Campaign $campaign)
+    public function show($slug)
     {
-        $campaign->load(['donations' => fn($query) => $query->latest(), 'updates', 'category']);
-        return view('campaigns.show', compact('campaign'));
+        try {
+            $campaign = Campaign::with(['categories', 'organizer' => function($query) {
+                $query->select('id', 'name', 'email', 'avatar', 'bio', 'phone', 'address', 'fundraiser_type', 'status');
+            }, 'donations' => function($query) {
+                $query->with('user:id,name,avatar')
+                      ->orderBy('created_at', 'desc')
+                      ->limit(5);
+            }])
+            ->where('slug', $slug)
+            ->firstOrFail();
+            
+            // Try to load updates if the table exists
+            try {
+                $campaign->load('updates');
+            } catch (\Exception $e) {
+                Log::warning('Could not load campaign updates: ' . $e->getMessage());
+                // Continue without updates if there's an issue
+            }
+            
+            // Add image URLs
+            $campaign->image_url = $campaign->getImageUrlAttribute();
+            $campaign->images_url = $campaign->getImagesUrlAttribute();
+            
+            // Add organizer avatar URL if exists
+            if ($campaign->organizer && $campaign->organizer->avatar) {
+                $campaign->organizer->avatar_url = url('storage/' . str_replace('\\', '', $campaign->organizer->avatar));
+            }
+
+            // Calculate remaining time and progress
+            $campaign->days_remaining = now()->diffInDays($campaign->end_date, false);
+            $campaign->progress_percentage = $campaign->target_amount > 0 
+                ? round(($campaign->current_amount / $campaign->target_amount) * 100)
+                : 0;
+                
+            // Add donation count for easier access in the frontend
+            $campaign->donations_count = $campaign->donations->count();
+            
+            // Include detailed organizer information
+            if ($campaign->organizer_description || $campaign->organizer_website || 
+                $campaign->organizer_address || $campaign->organizer_hotline || 
+                $campaign->organizer_contact) {
+                $campaign->organizer_details = [
+                    'name' => $campaign->organizer_name,
+                    'description' => $campaign->organizer_description,
+                    'website' => $campaign->organizer_website,
+                    'address' => $campaign->organizer_address,
+                    'hotline' => $campaign->organizer_hotline,
+                    'contact' => $campaign->organizer_contact
+                ];
+            }
+
+            return response()->json($campaign);
+        } catch (\Exception $e) {
+            Log::error('Error fetching campaign:', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['message' => 'Không tìm thấy chiến dịch'], 404);
+        }
+    }
+
+    public function featured()
+    {
+        try {
+            $campaigns = Campaign::where('status', 'active')
+                ->where('is_featured', true)
+                ->with(['categories', 'organizer'])
+                ->withCount('donations')
+                ->latest()
+                ->limit(3)
+                ->get();
+            
+            // Add image URLs
+            foreach ($campaigns as $campaign) {
+                $campaign->image_url = $campaign->getImageUrlAttribute();
+                $campaign->images_url = $campaign->getImagesUrlAttribute();
+            }
+            
+            return response()->json($campaigns);
+        } catch (\Exception $e) {
+            Log::error('Error fetching featured campaigns:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Có lỗi xảy ra khi tải danh sách chiến dịch nổi bật'], 500);
+        }
     }
 
     public function edit(Campaign $campaign)
     {
         $this->authorize('update', $campaign);
+        
         $categories = Category::all();
-        return view('campaigns.edit', compact('campaign', 'categories'));
+        return response()->json([
+            'campaign' => $campaign,
+            'categories' => $categories
+        ]);
     }
 
     public function update(Request $request, Campaign $campaign)
@@ -83,151 +267,192 @@ class CampaignController extends Controller
         $this->authorize('update', $campaign);
 
         $validated = $request->validate([
-            'title' => 'required|max:255',
-            'description' => 'required',
-            'target_amount' => 'required|numeric|min:1',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'image' => 'nullable|image|max:2048',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'target_amount' => 'required|numeric|min:1000000',
+            'end_date' => 'required|date|after:today',
             'category_id' => 'required|exists:categories,id',
+            'image' => 'nullable|image|max:2048',
+        ], [
+            'title.required' => 'Tiêu đề chiến dịch là bắt buộc',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
+            'description.required' => 'Mô tả chiến dịch là bắt buộc',
+            'target_amount.required' => 'Số tiền mục tiêu là bắt buộc',
+            'target_amount.min' => 'Số tiền mục tiêu tối thiểu là 1.000.000đ',
+            'end_date.required' => 'Ngày kết thúc là bắt buộc',
+            'end_date.after' => 'Ngày kết thúc phải sau ngày hôm nay',
+            'category_id.required' => 'Danh mục là bắt buộc',
+            'category_id.exists' => 'Danh mục không tồn tại',
+            'image.image' => 'File phải là hình ảnh',
+            'image.max' => 'Kích thước hình ảnh không được vượt quá 2MB',
         ]);
 
+        try {
         if ($request->hasFile('image')) {
             if ($campaign->image) {
                 Storage::disk('public')->delete($campaign->image);
             }
-            $path = $request->file('image')->store('campaigns', 'public');
+            // Delete all old images
+            if ($campaign->images) {
+                foreach ($campaign->images as $oldImage) {
+                    Storage::disk('public')->delete($oldImage);
+                }
+            }
+            $path = str_replace('\\', '', $request->file('image')->store('campaigns', 'public'));
             $validated['image'] = $path;
+            $validated['images'] = [$path];
         }
 
         $campaign->update($validated);
 
-        return redirect()->route('campaigns.show', $campaign)
-            ->with('success', 'Campaign updated successfully.');
+            Log::info('Campaign updated', ['campaign_id' => $campaign->id, 'user_id' => auth()->id()]);
+
+            return response()->json([
+                'message' => 'Chiến dịch đã được cập nhật thành công.',
+                'campaign' => $campaign
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Campaign update failed', [
+                'error' => $e->getMessage(),
+                'campaign_id' => $campaign->id,
+                'user_id' => auth()->id()
+            ]);
+
+            if (isset($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi cập nhật chiến dịch.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy(Campaign $campaign)
     {
         $this->authorize('delete', $campaign);
 
+        try {
         if ($campaign->image) {
             Storage::disk('public')->delete($campaign->image);
+        }
+        if ($campaign->images) {
+            foreach ($campaign->images as $image) {
+                Storage::disk('public')->delete($image);
+            }
         }
 
         $campaign->delete();
 
-        return redirect()->route('campaigns.index')
-            ->with('success', 'Campaign deleted successfully.');
+            Log::info('Campaign deleted', ['campaign_id' => $campaign->id, 'user_id' => auth()->id()]);
+
+            return response()->json([
+                'message' => 'Chiến dịch đã được xóa thành công.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Campaign deletion failed', [
+                'error' => $e->getMessage(),
+                'campaign_id' => $campaign->id,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi xóa chiến dịch.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function donate(Request $request, Campaign $campaign)
+    public function approve(Campaign $campaign)
     {
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:1000',
-            'message' => 'nullable|string|max:500',
-        ]);
+        $this->authorize('approve', $campaign);
 
-        $donation = $campaign->donations()->create([
-            'user_id' => $request->user()->id,
-            'amount' => $validated['amount'],
-            'message' => $validated['message'] ?? null,
+        try {
+            $campaign->update(['status' => 'active']);
+
+            // Notify organizer
+            Notification::create([
+                'user_id' => $campaign->organizer_id,
+                'type' => 'campaign_approved',
+                'message' => "Chiến dịch '{$campaign->title}' đã được phê duyệt.",
+                'data' => ['campaign_id' => $campaign->id]
+            ]);
+
+            Log::info('Campaign approved', [
+                'campaign_id' => $campaign->id, 
+                'approved_by' => auth()->id()
         ]);
 
         return response()->json([
-            'message' => 'Donation successful',
-            'donation' => $donation,
-        ]);
+                'message' => 'Chiến dịch đã được phê duyệt thành công.',
+                'campaign' => $campaign
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Campaign approval failed', [
+                'error' => $e->getMessage(),
+                'campaign_id' => $campaign->id
+            ]);
+
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi phê duyệt chiến dịch.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function analytics(Campaign $campaign)
+    public function reject(Request $request, Campaign $campaign)
     {
-        $this->authorize('view', $campaign);
-        $donations = $campaign->donations()->latest()->paginate(10);
-        $donationData = $campaign->donations()
-            ->selectRaw('DATE(created_at) as date, SUM(amount) as total')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        return view('campaigns.analytics', compact('campaign', 'donations', 'donationData'));
-    }
-
-    public function updates(Campaign $campaign)
-    {
-        $this->authorize('update', $campaign);
-        $updates = $campaign->updates()->latest()->get();
-        return view('campaigns.updates', compact('campaign', 'updates'));
-    }
-
-    public function storeUpdate(Request $request, Campaign $campaign)
-    {
-        $this->authorize('update', $campaign);
+        $this->authorize('reject', $campaign);
 
         $validated = $request->validate([
-            'content' => 'required',
-            'image' => 'nullable|image|max:2048',
+            'reason' => 'required|string|max:500'
+        ], [
+            'reason.required' => 'Lý do từ chối là bắt buộc',
+            'reason.max' => 'Lý do không được vượt quá 500 ký tự'
         ]);
 
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('campaign_updates', 'public');
-            $validated['image'] = $path;
-        }
-
-        $campaign->updates()->create($validated);
-
-        // Thông báo cho người theo dõi chiến dịch
-        $donors = $campaign->donations()->pluck('user_id')->unique();
-        foreach ($donors as $user_id) {
-            Notification::create([
-                'user_id' => $user_id,
-                'type' => 'campaign_update',
-                'message' => "Chiến dịch '{$campaign->title}' có cập nhật mới.",
+        try {
+            $campaign->update([
+                'status' => 'rejected',
+                'rejection_reason' => $validated['reason']
             ]);
-        }
 
-        return redirect()->route('campaigns.updates', $campaign)
-            ->with('success', 'Update added successfully.');
-    }
+            // Notify organizer
+            Notification::create([
+                'user_id' => $campaign->organizer_id,
+                'type' => 'campaign_rejected',
+                'message' => "Chiến dịch '{$campaign->title}' đã bị từ chối.",
+                'data' => [
+                    'campaign_id' => $campaign->id,
+                    'reason' => $validated['reason']
+                ]
+            ]);
 
-    public function adminIndex()
-    {
-        $this->authorize('viewAny', Campaign::class);
-        $campaigns = Campaign::with('organizer')->latest()->paginate(10);
-        return view('admin.campaigns.index', compact('campaigns'));
-    }
+            Log::info('Campaign rejected', [
+                'campaign_id' => $campaign->id, 
+                'rejected_by' => auth()->id(),
+                'reason' => $validated['reason']
+            ]);
 
-    public function approval()
-    {
-        $this->authorize('viewAny', Campaign::class);
-        $campaigns = Campaign::where('status', 'pending')->with('organizer')->latest()->paginate(10);
-        return view('admin.campaigns.approval', compact('campaigns'));
-    }
+            return response()->json([
+                'message' => 'Chiến dịch đã bị từ chối.',
+                'campaign' => $campaign
+            ]);
 
-    public function approve(Request $request, Campaign $campaign)
-    {
-        $this->authorize('update', $campaign);
-        $campaign->update(['status' => 'active']);
-
-        Notification::create([
-            'user_id' => $campaign->organizer_id,
-            'type' => 'campaign_approved',
-            'message' => "Chiến dịch '{$campaign->title}' đã được phê duyệt.",
+        } catch (\Exception $e) {
+            Log::error('Campaign rejection failed', [
+                'error' => $e->getMessage(),
+                'campaign_id' => $campaign->id
         ]);
 
-        return redirect()->route('admin.campaigns.approval')
-            ->with('success', 'Campaign approved successfully.');
-    }
-
-    public function featured()
-    {
-        $campaigns = Campaign::where('status', 'active')
-            ->where('is_featured', true)
-            ->orWhere('current_amount', '>', 1000000)
-            ->with('category')
-            ->latest()
-            ->take(6)
-            ->get();
-
-        return response()->json($campaigns);
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi từ chối chiến dịch.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
