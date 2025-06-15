@@ -2,25 +2,31 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import loginBg from '../../../../public/images/Login.jpg';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export default function Login() {
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const onSubmit = async (data: any) => {
     try {
-      const response = await axios.post('http://localhost:8000/api/login', data);
-
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        router.push('/');
+      const response = await login(data.email, data.password);
+      const redirect = searchParams.get('redirect') || '/';
+      
+      // Redirect based on user role
+      if (response.user.role.slug === 'admin') {
+        router.push('/admin');
+      } else if (response.user.role.slug === 'fundraiser') {
+        router.push('/fundraiser');
+      } else {
+        router.push(redirect);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Đăng nhập thất bại');

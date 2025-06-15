@@ -7,6 +7,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -17,13 +19,16 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
-        'role', // 'user', 'fundraiser', 'admin'
-        'status', // 'active', 'pending', 'rejected' - for fundraiser approval
+        'role_id',
+        'avatar',
+        'bio',
+        'address',
+        'status',
         'is_admin',
         'is_verified',
         'profile_picture',
-        'bio',
-        'address',
+        'registration_reason',
+        'fundraiser_type',
     ];
 
     protected $hidden = [
@@ -36,8 +41,12 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_admin' => 'boolean',
         'is_verified' => 'boolean',
-        'role' => 'string',
     ];
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
 
     public function campaigns()
     {
@@ -64,50 +73,43 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    public function fundraiserProfile()
+    public function fundraiserProfile(): HasOne
     {
         return $this->hasOne(FundraiserProfile::class);
     }
 
-    /**
-     * Check if user has a specific role
-     */
-    public function hasRole($role)
+    public function isFundraiser(): bool
     {
-        return $this->role === $role;
+        return $this->role->slug === 'fundraiser';
     }
 
-    /**
-     * Check if user has admin role
-     */
-    public function isAdmin()
+    public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->role->slug === 'admin';
     }
 
-    /**
-     * Check if user has staff role
-     */
     public function isStaff()
     {
-        return $this->hasRole('staff');
+        return $this->role->slug === 'staff';
     }
 
-    /**
-     * Check if user has regular user role
-     */
     public function isUser()
     {
-        return $this->hasRole('user');
-    }
-
-    public function isFundraiser()
-    {
-        return $this->role === 'fundraiser';
+        return $this->role->slug === 'user';
     }
 
     public function isPendingFundraiser()
     {
-        return $this->role === 'fundraiser' && $this->status === 'pending';
+        return $this->role->slug === 'fundraiser' && $this->status === 'pending';
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->role->permissions ?? []);
+    }
+
+    public function canCreateCampaign(): bool
+    {
+        return $this->isFundraiser() || $this->isAdmin();
     }
 }

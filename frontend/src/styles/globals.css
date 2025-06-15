@@ -177,8 +177,172 @@ body {
   }
 }
 
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slideInFromTop {
+  animation: slideInFromTop 0.8s ease-out;
+}
+
+.animate-slideInFromLeft {
+  animation: slideInFromLeft 0.9s ease-out 0.2s both;
+}
+
+.animate-slideInFromBottom {
+  animation: slideInFromBottom 1s ease-out 0.4s both;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 25%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 75%
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Page-specific animations */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.6s ease-out;
+}
+
+/* Staggered animations for campaign cards */
+.animate-slideInFromBottom {
+  animation: slideInFromBottom 0.6s ease-out both;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #f97316, #ea580c);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #ea580c, #dc2626);
+}
+
+/* Enhanced focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Certificate specific styles */
+.certificate-text-gradient {
+  background: linear-gradient(135deg, #012B72, #1E40AF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.certificate-amount-gradient {
+  background: linear-gradient(135deg, #D97706, #F59E0B, #FBBF24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced button effects */
+.button-glow {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+.button-glow:hover {
+  box-shadow: 0 0 30px rgba(249, 115, 22, 0.5);
+}
+
+.button-glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+.button-glow-blue:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
 }
 
 /* Responsive */
@@ -198,4 +362,4 @@ body {
   .section-subtitle {
     @apply text-lg mb-8;
   }
-} 
+}
