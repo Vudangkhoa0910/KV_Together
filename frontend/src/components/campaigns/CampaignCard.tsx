@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Campaign } from '@/services/api';
 import { formatCurrency, formatTimeLeft, getCampaignStatus } from '@/utils/format';
+import ProgressBar from '@/components/ProgressBar';
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -24,6 +25,18 @@ export function CampaignCard({ campaign, className = '' }: CampaignCardProps) {
   };
   
   const getUrgencyBadge = () => {
+    // Use display_status from backend if available
+    if (campaign.display_status === 'completed') {
+      return { text: 'Hoàn thành', style: 'bg-green-100 text-green-700' };
+    }
+    if (campaign.display_status === 'stopped') {
+      return { text: 'Đã dừng', style: 'bg-yellow-100 text-yellow-700' };
+    }
+    if (campaign.display_status === 'expired') {
+      return { text: 'Hết hạn', style: 'bg-orange-100 text-orange-700' };
+    }
+    
+    // Fallback to percentage-based logic if display_status not available
     if (campaign.progress_percentage >= 100) {
       return { text: 'Hoàn thành', style: 'bg-green-100 text-green-700' };
     }
@@ -91,21 +104,14 @@ export function CampaignCard({ campaign, className = '' }: CampaignCardProps) {
         </p>
 
         <div className="mt-5">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm text-gray-500 font-medium">Tiến độ</span>
-            <span className="text-sm font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
-              {campaign.progress_percentage}%
-            </span>
-          </div>
-          
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ease-out ${getProgressBarColor()} relative overflow-hidden`}
-              style={{ width: `${Math.min(campaign.progress_percentage, 100)}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
-            </div>
-          </div>
+          <ProgressBar 
+            value={campaign.current_amount} 
+            max={campaign.target_amount}
+            height="md"
+            variant={campaign.progress_percentage >= 100 ? 'success' : 'default'}
+            showPercentage={true}
+            label="Tiến độ"
+          />
 
           <div className="mt-4 space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-3">
