@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { api, Campaign, Category, Stats } from '@/services/api';
 import { CampaignCard } from '@/components/campaigns/CampaignCard';
 import { formatCurrency, formatCurrencyShort } from '@/utils/format';
+import Link from 'next/link';
 
 const CampaignsPage = () => {
+  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -32,21 +35,34 @@ const CampaignsPage = () => {
       }
     };
     loadInitialData();
-  }, []);
+
+    // Read category from URL params
+    if (searchParams) {
+      const categoryFromUrl = searchParams.get('category');
+      console.log('Category from URL:', categoryFromUrl);
+      if (categoryFromUrl) {
+        setSelectedCategory(categoryFromUrl);
+        console.log('Selected category set to:', categoryFromUrl);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const loadCampaigns = async () => {
       try {
         setLoading(true);
-        const { data, meta } = await api.getCampaigns({
+        const params = {
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
           sort: sortBy,
           page: currentPage,
           search: searchQuery,
-        });
+        };
+        console.log('Loading campaigns with params:', params);
+        const { data, meta } = await api.getCampaigns(params);
         setCampaigns(data);
         setTotalPages(meta.last_page);
         setError(null);
+        console.log('Loaded campaigns:', data.length, 'campaigns');
       } catch (err) {
         setError('Không thể tải danh sách chiến dịch');
         console.error('Failed to load campaigns:', err);
@@ -67,6 +83,24 @@ const CampaignsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50/30 to-blue-50/20">
       <div className="container mx-auto px-4 py-8">
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 inline-flex space-x-2">
+            <Link 
+              href="/campaigns"
+              className="px-6 py-3 rounded-lg bg-orange-600 text-white font-medium transition-all duration-200"
+            >
+              Đang hoạt động
+            </Link>
+            <Link 
+              href="/campaigns/completed"
+              className="px-6 py-3 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 font-medium transition-all duration-200"
+            >
+              Đã hoàn thành
+            </Link>
+          </div>
+        </div>
+
         {/* Hero Section */}
         <div className="text-center mb-12 relative overflow-hidden">
           {/* Decorative background elements */}
@@ -93,7 +127,7 @@ const CampaignsPage = () => {
               </div>
               <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-blue-100/50 shadow-lg">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {stats?.total_donors ? (stats.total_donors > 100 ? `${Math.floor(stats.total_donors / 100) * 100}+` : `${stats.total_donors}+`) : '0'}
+                  {stats?.total_donors ? `${stats.total_donors}+` : '0'}
                 </div>
                 <div className="text-gray-600 font-medium">Người đã đóng góp</div>
               </div>
