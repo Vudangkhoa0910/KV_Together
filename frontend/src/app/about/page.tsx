@@ -38,37 +38,43 @@ const AboutPage = () => {
 
   const milestones = [
     {
-      year: 2020,
-      title: 'Khởi đầu hành trình',
-      description: 'KV Together được thành lập với mục tiêu kết nối những trái tim nhiệt huyết.',
-      image: '/images/about/milestone-1.jpg'
+      year: 2024,
+      title: 'Khởi đầu mới',
+      description: 'KV Together bước vào giai đoạn phát triển mới với nhiều dự án cộng đồng ý nghĩa, mở rộng quy mô hoạt động trên toàn quốc.',
+      image: '/images/about/about_us_1.png',
     },
     {
-      year: 2021,
-      title: 'Mở rộng hoạt động',
-      description: 'Triển khai các dự án lớn tại nhiều tỉnh thành, thu hút hàng nghìn tình nguyện viên.',
-      image: '/images/about/milestone-2.jpg'
+      year: 2024,
+      title: 'Lan tỏa giá trị',
+      description: 'Tổ chức các chương trình thiện nguyện, kết nối hàng nghìn tình nguyện viên và đối tác trên khắp cả nước.',
+      image: '/images/about/about_us_2.jpg',
     },
     {
-      year: 2022,
-      title: 'Phát triển bền vững',
-      description: 'Xây dựng mô hình hoạt động bền vững và thiết lập quan hệ đối tác chiến lược.',
-      image: '/images/about/milestone-3.jpg'
+      year: 2025,
+      title: 'Vững bước phát triển',
+      description: 'Xây dựng hệ sinh thái thiện nguyện số, ứng dụng công nghệ để tối ưu hóa hoạt động và minh bạch hóa thông tin.',
+      image: '/images/about/about_us_3.webp',
     },
     {
-      year: 2023,
-      title: 'Vươn xa hơn nữa',
-      description: 'Mở rộng phạm vi hoạt động ra quốc tế và phát triển các dự án mới.',
-      image: '/images/about/milestone-4.jpg'
-    }
+      year: 2025,
+      title: 'Vươn tầm quốc tế',
+      description: 'Mở rộng hợp tác với các tổ chức quốc tế, đưa hình ảnh thiện nguyện Việt Nam ra thế giới.',
+      image: '/images/about/about_us_1.webp',
+    },
+  ];
+
+  const heroImages = [
+    '/images/about/about_us_1.png',
+    '/images/about/about_us_2.jpg',
+    '/images/about/about_us_3.webp',
   ];
 
   const team = [
     {
-      name: 'Nguyễn Văn A',
+      name: 'Vũ Đăng Khoa',
       role: 'Người sáng lập',
-      image: '/images/team/founder.jpg',
-      description: 'Với hơn 10 năm kinh nghiệm trong lĩnh vực công tác xã hội.',
+      image: '/images/about/owner/VuDangKhoa.jpg',
+      description: 'Vũ Đăng Khoa là người sáng lập KV Together, với tầm nhìn xây dựng một cộng đồng kết nối và sẻ chia. Anh có nhiều năm kinh nghiệm trong lĩnh vực công tác xã hội và phát triển cộng đồng.',
       social: {
         facebook: '#',
         linkedin: '#',
@@ -76,86 +82,75 @@ const AboutPage = () => {
       }
     },
     {
-      name: 'Trần Thị B',
-      role: 'Giám đốc điều hành',
-      image: '/images/team/ceo.jpg',
-      description: 'Chuyên gia về quản lý dự án và phát triển tổ chức.',
+      name: 'Nguyễn Hữu Vinh',
+      role: 'Đồng sáng lập',
+      image: '/images/about/owner/Vinh.png',
+      description: 'Nguyễn Hữu Vinh đồng hành cùng KV Together từ những ngày đầu, đóng vai trò quan trọng trong việc phát triển các dự án cộng đồng và kết nối các đối tác chiến lược.',
       social: {
         facebook: '#',
         linkedin: '#',
         twitter: '#'
       }
     },
-    {
-      name: 'Lê Văn C',
-      role: 'Quản lý dự án',
-      image: '/images/team/manager.jpg',
-      description: 'Nhiều năm kinh nghiệm trong việc tổ chức các hoạt động cộng đồng.',
-      social: {
-        facebook: '#',
-        linkedin: '#',
-        twitter: '#'
-      }
-    },
-    {
-      name: 'Phạm Thị D',
-      role: 'Điều phối viên',
-      image: '/images/team/coordinator.jpg',
-      description: 'Chuyên gia về truyền thông và phát triển cộng đồng.',
-      social: {
-        facebook: '#',
-        linkedin: '#',
-        twitter: '#'
-      }
-    }
   ];
 
   const partners = [
     {
-      name: 'Tổ chức A',
-      logo: '/images/partners/partner-1.png',
-      description: 'Đối tác chiến lược trong các dự án giáo dục.'
+      name: 'FPT',
+      logo: '/images/about/partner/fpt.png',
+      description: 'Đối tác công nghệ đồng hành cùng các dự án chuyển đổi số cộng đồng.'
     },
     {
-      name: 'Công ty B',
-      logo: '/images/partners/partner-2.png',
-      description: 'Hỗ trợ tài chính và nguồn lực cho các hoạt động.'
+      name: 'Phenikaa',
+      logo: '/images/about/partner/phenikaa.webp',
+      description: 'Hỗ trợ nghiên cứu, phát triển giải pháp sáng tạo cho xã hội.'
     },
     {
-      name: 'Quỹ C',
-      logo: '/images/partners/partner-3.png',
-      description: 'Đồng hành trong các dự án phát triển cộng đồng.'
+      name: 'VinGroup',
+      logo: '/images/about/partner/vin.jpg',
+      description: 'Đồng hành trong các dự án thiện nguyện quy mô lớn.'
     },
     {
-      name: 'Tập đoàn D',
-      logo: '/images/partners/partner-4.png',
-      description: 'Cung cấp công nghệ và giải pháp kỹ thuật.'
-    }
+      name: 'VNPay',
+      logo: '/images/about/partner/vnpay.jpg',
+      description: 'Đối tác thanh toán, hỗ trợ các chiến dịch gây quỹ minh bạch.'
+    },
+    {
+      name: 'Đoàn Thanh Niên',
+      logo: '/images/about/partner/ĐoànTN.jpg',
+      description: 'Đồng hành tổ chức các hoạt động thiện nguyện cho thanh thiếu niên.'
+    },
   ];
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative h-[700px]">
-        <Image
-          src="/images/about/about_us.png"
-          alt="About Us Hero"
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/50">
-          <div className="container mx-auto h-full flex items-center">
-            <div className="max-w-2xl text-white">
-              <h1 className="text-5xl font-bold mb-6">
-                Kết nối yêu thương, lan tỏa hạnh phúc
-              </h1>
-              <p className="text-xl mb-8">
-                KV Together là nơi kết nối những trái tim nhiệt huyết, 
-                cùng chung tay xây dựng một cộng đồng tốt đẹp hơn.
-              </p>
-              <Link href="/activities" className="btn btn-primary">
-                Tham gia cùng chúng tôi
-              </Link>
+      {/* Hero Section - Carousel */}
+      <section
+        className="relative w-full h-[420px] flex items-center justify-center bg-cover bg-center"
+        style={{ backgroundImage: 'url(/images/about/about_us.png)' }}
+      >
+        <div className="absolute inset-0 bg-orange-500/70" />
+        <div className="relative z-10 flex flex-col items-center justify-center text-center text-white w-full">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Về KV Together</h1>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto">
+            Kết nối - Lan tỏa - Sẻ chia. Chúng tôi xây dựng một cộng đồng vững mạnh, nơi mọi người cùng nhau tạo nên những giá trị tốt đẹp cho xã hội.
+          </p>
+          <div className="flex justify-center gap-12 mt-10 w-full">
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold">10,000+</span>
+              <span className="text-base">Người tham gia</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold">500+</span>
+              <span className="text-base">Hoạt động đã tổ chức</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold">50+</span>
+              <span className="text-base">Đối tác</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold">20+</span>
+              <span className="text-base">Tỉnh thành</span>
             </div>
           </div>
         </div>
@@ -237,24 +232,24 @@ const AboutPage = () => {
       <section className="py-16">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Đội ngũ của chúng tôi</h2>
+            <h2 className="text-3xl font-bold mb-4">Đội ngũ sáng lập</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Những con người tâm huyết, luôn nỗ lực hết mình vì cộng đồng
+              Những người đặt nền móng và dẫn dắt KV Together phát triển bền vững
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
             {team.map((member, index) => (
-              <div key={index} className="card p-6">
-                <div className="relative w-32 h-32 mx-auto mb-4">
+              <div key={index} className="card p-8 bg-white rounded-xl shadow-lg flex flex-col items-center">
+                <div className="relative w-40 h-40 mb-4">
                   <Image
                     src={member.image}
                     alt={member.name}
                     fill
-                    className="object-cover rounded-full"
+                    className="object-cover rounded-full border-4 border-orange-200 shadow-md"
                   />
                 </div>
                 <div className="text-center">
-                  <h3 className="text-xl font-bold mb-1">{member.name}</h3>
+                  <h3 className="text-2xl font-bold mb-1 text-orange-700">{member.name}</h3>
                   <div className="text-orange-500 font-medium mb-2">{member.role}</div>
                   <p className="text-gray-600 mb-4">{member.description}</p>
                   <div className="flex justify-center space-x-4">
@@ -284,7 +279,7 @@ const AboutPage = () => {
               Cảm ơn sự đồng hành và hỗ trợ của các đối tác
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
             {partners.map((partner, index) => (
               <div key={index} className="card p-6">
                 <div className="relative h-24 mb-4">
@@ -329,4 +324,4 @@ const AboutPage = () => {
   );
 };
 
-export default AboutPage; 
+export default AboutPage;
