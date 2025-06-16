@@ -63,6 +63,11 @@ class User extends Authenticatable
         return $this->hasMany(News::class, 'author_id');
     }
 
+    public function activities()
+    {
+        return $this->hasMany(Activity::class, 'organizer_id');
+    }
+
     public function blogs()
     {
         return $this->hasMany(Blog::class);
@@ -111,5 +116,15 @@ class User extends Authenticatable
     public function canCreateCampaign(): bool
     {
         return $this->isFundraiser() || $this->isAdmin();
+    }
+
+    public function canCreateNews(): bool
+    {
+        return $this->isFundraiser() || $this->isAdmin();
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role && $this->role->slug === $role;
     }
 }

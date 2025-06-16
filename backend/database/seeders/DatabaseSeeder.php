@@ -21,7 +21,9 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             UserSeeder::class,
             CampaignSeeder::class,
+            ActivitySeeder::class,
             DonationSeeder::class,
+            MonthlyStatsSeeder::class,
         ]);
     }
 }

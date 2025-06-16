@@ -45,24 +45,25 @@ const ContactPage = () => {
     }
   };
 
+  // Cập nhật thông tin liên hệ chi tiết và đúng yêu cầu
   const contactInfo = [
     {
       icon: 'fa-map-marker-alt',
       title: 'Địa chỉ',
-      content: '123 Đường ABC, Quận XYZ, TP.HCM',
-      link: 'https://goo.gl/maps/123',
+      content: 'P. Nguyễn Trác, Yên Nghĩa, Hà Đông, Hà Nội',
+      link: 'https://www.google.com/maps/dir//P.+Nguy%E1%BB%85n+Tr%C3%A1c,+Y%C3%AAn+Ngh%C4%A9a,+H%C3%A0+%C4%90%C3%B4ng,+H%C3%A0+N%E1%BB%96i/@20.9625914,105.6662847,12z/data=!4m8!4m7!1m0!1m5!1m1!1s0x313452efff394ce3:0x391a39d4325be464!2m2!1d105.7486864!2d20.9626112?entry=ttu',
     },
     {
       icon: 'fa-phone',
       title: 'Điện thoại',
-      content: '(+84) 123 456 789',
-      link: 'tel:+84123456789',
+      content: '0822 608 286',
+      link: 'tel:0822608286',
     },
     {
       icon: 'fa-envelope',
       title: 'Email',
-      content: 'contact@kvtogether.com',
-      link: 'mailto:contact@kvtogether.com',
+      content: 'khoa@together.com',
+      link: 'mailto:khoa@together.com',
     },
   ];
 
@@ -91,21 +92,14 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative h-[400px]">
-        <Image
-          src="/images/contact/hero.jpg"
-          alt="Contact Hero"
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/50">
+      {/* Hero Section với gradient cam-trắng */}
+      <section className="relative h-[400px] bg-gradient-to-br from-orange-500 via-white to-white">
+        <div className="absolute inset-0 flex items-center">
           <div className="container mx-auto h-full flex items-center">
-            <div className="max-w-2xl text-white">
-              <h1 className="text-4xl font-bold mb-4">Liên hệ với chúng tôi</h1>
-              <p className="text-xl">
-                Hãy chia sẻ với chúng tôi những ý kiến, thắc mắc hoặc đề xuất của bạn.
-                Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn.
+            <div className="max-w-2xl text-white drop-shadow-lg">
+              <h1 className="text-4xl font-bold mb-4 text-orange-700">Liên hệ với chúng tôi</h1>
+              <p className="text-xl text-orange-900 font-medium">
+                Kết nối với KV Together để nhận tư vấn, hợp tác hoặc hỗ trợ các hoạt động cộng đồng. Chúng tôi luôn sẵn sàng lắng nghe và đồng hành cùng bạn.
               </p>
             </div>
           </div>
@@ -124,65 +118,60 @@ const ContactPage = () => {
                   href={info.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card p-6 block hover:shadow-lg transition-shadow"
+                  className="card p-6 block hover:shadow-lg transition-shadow bg-white rounded-xl border border-gray-100 flex items-start gap-4"
                 >
-                  <div className="flex items-start">
-                    <div className="w-12 h-12 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <i className={`fas ${info.icon} text-xl`}></i>
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-bold mb-1">{info.title}</h3>
-                      <p className="text-gray-600">{info.content}</p>
-                    </div>
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 text-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow">
+                    <i className={`fas ${info.icon} text-2xl`}></i>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold mb-1 text-gray-900">{info.title}</h3>
+                    <p className="text-gray-600 text-base">{info.content}</p>
                   </div>
                 </a>
               ))}
 
               {/* Social Links */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold mb-4">Kết nối với chúng tôi</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="card p-6 bg-white rounded-xl border border-gray-100">
+                <h3 className="text-lg font-bold mb-4 text-gray-900">Kết nối với chúng tôi</h3>
+                <div className="flex gap-4">
                   {socialLinks.map((social, index) => (
                     <a
                       key={index}
                       href={social.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center p-2 rounded-lg hover:bg-gray-50"
+                      className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center hover:bg-orange-100 transition"
                     >
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                        <i className={`fab ${social.icon} text-gray-600`}></i>
-                      </div>
-                      <span className="ml-2 text-gray-600">{social.name}</span>
+                      <i className={`fab ${social.icon} text-xl text-orange-500`}></i>
                     </a>
                   ))}
                 </div>
               </div>
 
               {/* Office Hours */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold mb-4">Giờ làm việc</h3>
-                <div className="space-y-2">
+              <div className="card p-6 bg-white rounded-xl border border-gray-100">
+                <h3 className="text-lg font-bold mb-4 text-gray-900">Giờ làm việc</h3>
+                <div className="space-y-2 text-gray-700">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Thứ 2 - Thứ 6:</span>
+                    <span>Thứ 2 - Thứ 6:</span>
                     <span className="font-medium">8:00 - 17:30</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Thứ 7:</span>
+                    <span>Thứ 7:</span>
                     <span className="font-medium">8:00 - 12:00</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Chủ nhật:</span>
+                    <span>Chủ nhật:</span>
                     <span className="font-medium">Nghỉ</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Contact Form */}
+            {/* Contact Form nâng cấp UI */}
             <div className="lg:col-span-2">
-              <div className="card p-8">
-                <h2 className="text-2xl font-bold mb-6">Gửi tin nhắn cho chúng tôi</h2>
+              <div className="card p-10 bg-white rounded-xl border border-gray-100 shadow-lg">
+                <h2 className="text-2xl font-bold mb-8 text-gray-900">Gửi tin nhắn cho chúng tôi</h2>
                 {submitSuccess ? (
                   <div className="bg-green-50 text-green-600 p-4 rounded-lg">
                     <div className="flex items-center mb-2">
@@ -190,59 +179,57 @@ const ContactPage = () => {
                       <span className="font-medium">Gửi tin nhắn thành công!</span>
                     </div>
                     <p>
-                      Cảm ơn bạn đã liên hệ với chúng tôi. 
-                      Chúng tôi sẽ phản hồi trong thời gian sớm nhất.
+                      Cảm ơn bạn đã liên hệ với chúng tôi. Chúng tôi sẽ phản hồi trong thời gian sớm nhất.
                     </p>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
-                        <label htmlFor="name" className="label">Họ và tên</label>
+                        <label htmlFor="name" className="block text-base font-semibold mb-2 text-gray-700">Họ và tên</label>
                         <input
                           type="text"
                           id="name"
                           name="name"
                           value={formData.name}
                           onChange={handleInputChange}
-                          className="input"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none text-gray-900 bg-gray-50"
                           required
                         />
                       </div>
                       <div>
-                        <label htmlFor="email" className="label">Email</label>
+                        <label htmlFor="email" className="block text-base font-semibold mb-2 text-gray-700">Email</label>
                         <input
                           type="email"
                           id="email"
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className="input"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none text-gray-900 bg-gray-50"
                           required
                         />
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
-                        <label htmlFor="phone" className="label">Số điện thoại</label>
+                        <label htmlFor="phone" className="block text-base font-semibold mb-2 text-gray-700">Số điện thoại</label>
                         <input
                           type="tel"
                           id="phone"
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="input"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none text-gray-900 bg-gray-50"
                         />
                       </div>
                       <div>
-                        <label htmlFor="subject" className="label">Chủ đề</label>
+                        <label htmlFor="subject" className="block text-base font-semibold mb-2 text-gray-700">Chủ đề</label>
                         <select
                           id="subject"
                           name="subject"
                           value={formData.subject}
                           onChange={handleInputChange}
-                          className="input"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none text-gray-900 bg-gray-50"
                           required
                         >
                           <option value="">Chọn chủ đề</option>
@@ -254,35 +241,24 @@ const ContactPage = () => {
                         </select>
                       </div>
                     </div>
-
                     <div>
-                      <label htmlFor="message" className="label">Tin nhắn</label>
+                      <label htmlFor="message" className="block text-base font-semibold mb-2 text-gray-700">Tin nhắn</label>
                       <textarea
                         id="message"
                         name="message"
                         value={formData.message}
                         onChange={handleInputChange}
-                        className="input min-h-[200px]"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none text-gray-900 bg-gray-50 min-h-[120px]"
                         required
                       ></textarea>
                     </div>
-
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className={`btn btn-primary w-full ${isSubmitting ? 'opacity-75 cursor-wait' : ''}`}
+                      className={`w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-orange-500 to-orange-400 shadow-lg flex items-center justify-center gap-2 transition hover:from-orange-600 hover:to-orange-500 ${isSubmitting ? 'opacity-75 cursor-wait' : ''}`}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <i className="fas fa-circle-notch fa-spin mr-2"></i>
-                          Đang gửi...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-paper-plane mr-2"></i>
-                          Gửi tin nhắn
-                        </>
-                      )}
+                      <i className="fas fa-paper-plane"></i>
+                      Gửi tin nhắn
                     </button>
                   </form>
                 )}
@@ -292,10 +268,10 @@ const ContactPage = () => {
         </div>
       </section>
 
-      {/* Map Section */}
-      <section className="h-[400px] relative">
+      {/* Map Section - Địa chỉ mới */}
+      <section className="h-[400px] relative mt-10 rounded-xl overflow-hidden shadow-lg">
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4241674197956!2d106.69141731533417!3d10.777167362124685!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f3a9d8d1bb3%3A0xc4eca1b1726b7e37!2sNguyen%20Hue%20Walking%20Street!5e0!3m2!1sen!2s!4v1647095757201!5m2!1sen!2s"
+          src="https://www.google.com/maps?q=P.+Nguy%E1%BB%85n+Tr%C3%A1c,+Y%C3%AAn+Ngh%C4%A9a,+H%C3%A0+%C4%90%C3%B4ng,+H%C3%A0+N%E1%BB%96i&output=embed"
           width="100%"
           height="100%"
           style={{ border: 0 }}
@@ -308,4 +284,4 @@ const ContactPage = () => {
   );
 };
 
-export default ContactPage; 
+export default ContactPage;

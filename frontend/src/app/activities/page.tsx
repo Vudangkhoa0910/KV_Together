@@ -1,325 +1,388 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Activity, api } from '@/services/api';
 import Link from 'next/link';
-import ActivityOptions from '@/components/ActivityOptions';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { 
+  Calendar, 
+  MapPin, 
+  Users, 
+  Search, 
+  Filter,
+  DollarSign,
+  Star,
+  Eye
+} from 'lucide-react';
 
-const ActivitiesPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+export default function ActivitiesPage() {
+  const searchParams = useSearchParams();
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [featuredActivities, setFeaturedActivities] = useState<Activity[]>([]);
+  const [categories, setCategories] = useState<{id: string; name: string}[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Mock data for activity categories
-  const categories = [
-    { id: 'all', name: 'Tất cả' },
-    { id: 'volunteer', name: 'Tình nguyện' },
-    { id: 'charity', name: 'Từ thiện' },
-    { id: 'education', name: 'Giáo dục' },
-    { id: 'environment', name: 'Môi trường' },
-  ];
+  // Read query parameters from URL
+  useEffect(() => {
+    if (searchParams) {
+      const categoryFromUrl = searchParams.get('category');
+      const searchFromUrl = searchParams.get('search');
+      const statusFromUrl = searchParams.get('status');
+      
+      if (categoryFromUrl) {
+        setSelectedCategory(categoryFromUrl);
+      }
+      if (searchFromUrl) {
+        setSearchTerm(searchFromUrl);
+      }
+      if (statusFromUrl) {
+        // Handle status filter - you can extend this based on your needs
+        // For now, we'll just include it in the API call
+      }
+    }
+  }, [searchParams]);
 
-  const statuses = [
-    { id: 'all', name: 'Tất cả' },
-    { id: 'upcoming', name: 'Sắp diễn ra' },
-    { id: 'ongoing', name: 'Đang diễn ra' },
-    { id: 'completed', name: 'Đã hoàn thành' },
-  ];
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
 
-  // Mock data for activities
-  const activities = [
-    {
-      id: 1,
-      title: 'Dọn dẹp bãi biển và trồng rừng ngập mặn',
-      category: 'environment',
-      status: 'upcoming',
-      image: '/images/activities/beach-cleanup.jpg',
-      location: 'Bãi biển Vũng Tàu',
-      startDate: '2024-04-15',
-      endDate: '2024-04-16',
-      participants: 45,
-      maxParticipants: 100,
-      organizer: {
-        name: 'CLB Môi trường Xanh',
-        avatar: '/images/organizers/green-club.jpg'
-      },
-      description: 'Hoạt động dọn dẹp bãi biển và trồng rừng ngập mặn nhằm bảo vệ môi trường biển và hệ sinh thái.',
-      featured: true
-    },
-    {
-      id: 2,
-      title: 'Dạy học cho trẻ em vùng cao',
-      category: 'education',
-      status: 'ongoing',
-      image: '/images/activities/teaching.jpg',
-      location: 'Hà Giang',
-      startDate: '2024-03-01',
-      endDate: '2024-05-30',
-      participants: 20,
-      maxParticipants: 25,
-      organizer: {
-        name: 'Quỹ Hy Vọng',
-        avatar: '/images/organizers/hope-fund.jpg'
-      },
-      description: 'Chương trình dạy học tình nguyện cho trẻ em vùng cao, tập trung vào các môn học cơ bản.'
-    },
-    // Add more activities here
-  ];
+  useEffect(() => {
+    fetchActivities();
+  }, [page, searchTerm, selectedCategory]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return 'bg-blue-100 text-blue-600';
-      case 'ongoing':
-        return 'bg-green-100 text-green-600';
-      case 'completed':
-        return 'bg-gray-100 text-gray-600';
-      default:
-        return 'bg-gray-100 text-gray-600';
+  const fetchInitialData = async () => {
+    try {
+      const [featuredResponse, categoriesResponse] = await Promise.all([
+        api.getFeaturedActivities(),
+        api.getActivityCategories()
+      ]);
+      
+      setFeaturedActivities(featuredResponse);
+      setCategories(categoriesResponse);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
     }
   };
 
-  const getStatusName = (status: string) => {
-    return statuses.find(s => s.id === status)?.name || status;
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const params: any = { page };
+      
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      
+      if (selectedCategory !== 'all') {
+        params.category = selectedCategory;
+      }
+      
+      const response = await api.getActivities(params);
+      setActivities(response.data);
+      setTotalPages(response.meta.last_page);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredActivities = activities.filter(activity => {
-    const matchesCategory = selectedCategory === 'all' || activity.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'all' || activity.status === selectedStatus;
-    const matchesSearch = activity.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         activity.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         activity.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesStatus && matchesSearch;
-  });
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    fetchActivities();
+  };
 
-  return (
-    <div className="container mx-auto py-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Hoạt động thiện nguyện</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Tham gia các hoạt động ý nghĩa, chung tay xây dựng cộng đồng và lan tỏa yêu thương.
-        </p>
-      </div>
+  const getCategoryLabel = (category: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'event': 'Sự kiện',
+      'workshop': 'Hội thảo',
+      'community': 'Cộng đồng',
+      'volunteer': 'Tình nguyện'
+    };
+    return categoryMap[category] || category;
+  };
 
-      {/* Featured Activity */}
-      {filteredActivities.find(activity => activity.featured) && (
-        <div className="mb-12">
-          {activities.filter(activity => activity.featured).map(activity => (
-            <div key={activity.id} className="relative h-[500px] rounded-lg overflow-hidden">
-              <Image
-                src={activity.image}
-                alt={activity.title}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent">
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <span className={`badge ${getStatusColor(activity.status)}`}>
-                      {getStatusName(activity.status)}
-                    </span>
-                    <span className="badge badge-primary">
-                      {categories.find(c => c.id === activity.category)?.name}
-                    </span>
-                  </div>
-                  <h2 className="text-3xl font-bold text-white mb-4">
-                    <Link href={`/activities/${activity.id}`} className="hover:text-orange-500">
-                      {activity.title}
-                    </Link>
-                  </h2>
-                  <p className="text-gray-200 mb-6 line-clamp-2">{activity.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                        <Image
-                          src={activity.organizer.avatar}
-                          alt={activity.organizer.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="text-white font-medium">{activity.organizer.name}</div>
-                        <div className="text-gray-300 text-sm">{activity.location}</div>
-                      </div>
-                    </div>
-                    <div className="text-right text-gray-300">
-                      <div className="text-sm">
-                        {formatDate(activity.startDate)} - {formatDate(activity.endDate)}
-                      </div>
-                      <div className="text-sm">
-                        {activity.participants}/{activity.maxParticipants} người tham gia
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+  if (loading && activities.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded"></div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 space-y-4 md:space-y-0">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category.id
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="form-select"
-          >
-            {statuses.map((status) => (
-              <option key={status.id} value={status.id}>
-                {status.name}
-              </option>
-            ))}
-          </select>
-
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm hoạt động..."
-              className="w-64 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Activities Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredActivities.filter(activity => !activity.featured).map((activity) => (
-          <article key={activity.id} className="card animate-fade-in">
-            <div className="relative">
-              <div className="relative h-48">
-                <Image
-                  src={activity.image}
-                  alt={activity.title}
-                  fill
-                  className="object-cover rounded-t-lg"
-                />
-              </div>
-              <div className="absolute top-2 right-2">
-                <ActivityOptions
-                  activityId={activity.id}
-                  userRole="member" // TODO: Get from auth context
-                  status={activity.status}
-                  onDelete={() => {
-                    // TODO: Implement delete functionality
-                    console.log('Delete activity:', activity.id);
-                  }}
-                />
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className={`badge ${getStatusColor(activity.status)}`}>
-                  {getStatusName(activity.status)}
-                </span>
-                <span className="badge badge-primary">
-                  {categories.find(c => c.id === activity.category)?.name}
-                </span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">
-                <Link href={`/activities/${activity.id}`} className="hover:text-orange-500">
-                  {activity.title}
-                </Link>
-              </h3>
-              <p className="text-gray-600 mb-4 line-clamp-2">
-                {activity.description}
-              </p>
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                <div className="flex items-center">
-                  <i className="fas fa-map-marker-alt mr-2"></i>
-                  {activity.location}
-                </div>
-                <div>
-                  <i className="fas fa-calendar mr-2"></i>
-                  {formatDate(activity.startDate)}
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden mr-2">
-                    <Image
-                      src={activity.organizer.avatar}
-                      alt={activity.organizer.name}
-                      fill
-                      className="object-cover"
-                    />
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Hoạt động cộng đồng
+          </h1>
+          <p className="text-xl text-gray-600">
+            Tham gia các hoạt động ý nghĩa và kết nối với cộng đồng
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Featured Activities */}
+        {featuredActivities.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <Star className="mr-2 text-yellow-500" size={24} />
+              Hoạt động nổi bật
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredActivities.slice(0, 3).map((activity) => (
+                <div key={activity.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                  <div className="relative">
+                    {activity.image_url && (
+                      <img
+                        src={activity.image_url}
+                        alt={activity.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    )}
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-yellow-500 text-white px-2 py-1 text-xs font-medium rounded-full">
+                        Nổi bật
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium">{activity.organizer.name}</span>
+                  <div className="p-6">
+                    <div className="flex items-center mb-2">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium rounded">
+                        {getCategoryLabel(activity.category)}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {activity.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4 line-clamp-2">
+                      {activity.summary}
+                    </p>
+                    <div className="space-y-2 text-sm text-gray-500 mb-4">
+                      <div className="flex items-center">
+                        <Calendar size={16} className="mr-2" />
+                        {format(new Date(activity.event_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin size={16} className="mr-2" />
+                        {activity.location}
+                      </div>
+                      <div className="flex items-center">
+                        <Users size={16} className="mr-2" />
+                        {activity.current_participants}/{activity.max_participants} người
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-green-600">
+                        {activity.registration_fee > 0 
+                          ? `${new Intl.NumberFormat('vi-VN').format(activity.registration_fee)} VNĐ`
+                          : 'Miễn phí'
+                        }
+                      </span>
+                      <Link
+                        href={`/activities/${activity.slug}`}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Xem chi tiết
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {activity.participants}/{activity.maxParticipants} người tham gia
-                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Search and Filter */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm hoạt động..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
             </div>
-            <div className="card-footer">
-              <Link
-                href={`/activities/${activity.id}`}
-                className="btn btn-primary w-full"
+            <div className="flex gap-2">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                Xem chi tiết
-              </Link>
+                <option value="all">Tất cả danh mục</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Filter size={20} />
+                Lọc
+              </button>
             </div>
-          </article>
-        ))}
-      </div>
+          </form>
+        </div>
 
-      {/* Create Activity Button */}
-      <div className="text-center mt-12">
-        <Link
-          href="/activities/create"
-          className="btn btn-primary inline-flex items-center"
-        >
-          <i className="fas fa-plus mr-2"></i>
-          Tạo hoạt động mới
-        </Link>
-      </div>
+        {/* Activities Grid */}
+        <section>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            Tất cả hoạt động
+          </h2>
+          
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-64 bg-gray-200 rounded-lg"></div>
+                </div>
+              ))}
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search size={48} className="mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Không tìm thấy hoạt động nào
+              </h3>
+              <p className="text-gray-600">
+                Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activities.map((activity) => (
+                <div key={activity.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative">
+                    {activity.image_url && (
+                      <img
+                        src={activity.image_url}
+                        alt={activity.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    )}
+                    {activity.is_featured && (
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-yellow-500 text-white px-2 py-1 text-xs font-medium rounded-full">
+                          Nổi bật
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium rounded">
+                        {getCategoryLabel(activity.category)}
+                      </span>
+                      <div className="flex items-center text-gray-500 text-sm">
+                        <Eye size={14} className="mr-1" />
+                        {activity.views_count}
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {activity.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4 line-clamp-2">
+                      {activity.summary}
+                    </p>
+                    <div className="space-y-2 text-sm text-gray-500 mb-4">
+                      <div className="flex items-center">
+                        <Calendar size={14} className="mr-2" />
+                        {format(new Date(activity.event_date), 'dd/MM/yyyy', { locale: vi })}
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin size={14} className="mr-2" />
+                        {activity.location}
+                      </div>
+                      <div className="flex items-center">
+                        <Users size={14} className="mr-2" />
+                        {activity.current_participants}/{activity.max_participants}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-green-600">
+                        {activity.registration_fee > 0 
+                          ? `${new Intl.NumberFormat('vi-VN').format(activity.registration_fee)} VNĐ`
+                          : 'Miễn phí'
+                        }
+                      </span>
+                      <Link
+                        href={`/activities/${activity.slug}`}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        Xem chi tiết
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-      {/* Pagination */}
-      <div className="flex justify-center mt-12">
-        <nav className="flex items-center space-x-2">
-          <button className="p-2 border rounded hover:bg-gray-50">
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <button className="px-4 py-2 border rounded bg-orange-500 text-white">1</button>
-          <button className="px-4 py-2 border rounded hover:bg-gray-50">2</button>
-          <button className="px-4 py-2 border rounded hover:bg-gray-50">3</button>
-          <button className="p-2 border rounded hover:bg-gray-50">
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </nav>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-12">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Trước
+              </button>
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setPage(i + 1)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                    page === i + 1
+                      ? 'text-blue-600 bg-blue-50 border border-blue-300'
+                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={page === totalPages}
+                className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default ActivitiesPage; 
+}

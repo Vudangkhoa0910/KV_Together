@@ -15,8 +15,13 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'KV Together - Nền tảng gây quỹ cộng đồng',
-  description: 'Kết nối những tấm lòng nhân ái, lan tỏa yêu thương và xây dựng một xã hội tốt đẹp hơn.',
+  title: 'KV Together - Nền tảng gây quỹ từ thiện hàng đầu Việt Nam',
+  description: 'Kết nối những tấm lòng hảo tâm với các hoàn cảnh khó khăn. Tham gia gây quỹ, lan tỏa yêu thương và tạo ra những thay đổi tích cực cho cộng đồng.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

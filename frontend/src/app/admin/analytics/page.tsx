@@ -12,9 +12,8 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement,
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { formatCurrency } from '@/utils/format';
 
 ChartJS.register(
@@ -25,8 +24,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  ArcElement
+  Legend
 );
 
 interface DonationStats {
@@ -133,29 +131,7 @@ export default function AnalyticsPage() {
     ],
   };
 
-  const categoryChartData = {
-    labels: campaignStats?.categoryDistribution.map((d) => d.name) || [],
-    datasets: [
-      {
-        data: campaignStats?.categoryDistribution.map((d) => d.count) || [],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.5)',
-          'rgba(54, 162, 235, 0.5)',
-          'rgba(255, 206, 86, 0.5)',
-          'rgba(75, 192, 192, 0.5)',
-          'rgba(153, 102, 255, 0.5)',
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
+
 
   const userChartData = {
     labels: userStats?.monthlyRegistrations.map((d) => d.month) || [],
@@ -292,19 +268,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Campaign Distribution */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-6">Phân bố chiến dịch</h3>
-            <div className="h-80">
-              <Doughnut
-                data={categoryChartData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                }}
-              />
-            </div>
-          </div>
+
 
           {/* Campaign Trends */}
           <div className="bg-white shadow rounded-lg p-6">

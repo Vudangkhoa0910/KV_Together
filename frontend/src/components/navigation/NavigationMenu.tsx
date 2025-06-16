@@ -61,8 +61,8 @@ const NavigationMenu: React.FC = () => {
           
           <MegaMenu
             sections={menu.sections}
-            featured={key === 'news' ? menu.featured : undefined}
             isVisible={activeMenu === key}
+            showFeaturedNews={key === 'news'}
           />
         </div>
       ))}

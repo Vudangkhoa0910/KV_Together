@@ -1,6 +1,8 @@
 interface MenuItem {
   label: string;
   href: string;
+  requireAuth?: boolean;
+  requireRole?: 'user' | 'fundraiser' | 'admin';
 }
 
 interface MenuSection {
@@ -8,25 +10,14 @@ interface MenuSection {
   items: MenuItem[];
 }
 
-interface FeaturedNewsItem extends MenuItem {
-  date: string;
-}
-
 interface BaseMenuItem {
   title: string;
   sections: MenuSection[];
 }
 
-interface NewsMenuItem extends BaseMenuItem {
-  featured: {
-    title: string;
-    items: FeaturedNewsItem[];
-  };
-}
-
 interface MenuItems {
   campaigns: BaseMenuItem;
-  news: NewsMenuItem;
+  news: BaseMenuItem;
   activities: BaseMenuItem;
   about: BaseMenuItem;
 }
@@ -36,30 +27,36 @@ export const MENU_ITEMS: MenuItems = {
     title: 'Chiến dịch',
     sections: [
       {
-        title: 'Danh mục',
+        title: 'Danh mục chiến dịch',
         items: [
-          { label: 'Giáo dục', href: '/campaigns/education' },
-          { label: 'Y tế', href: '/campaigns/healthcare' },
-          { label: 'Môi trường', href: '/campaigns/environment' },
-          { label: 'Cộng đồng', href: '/campaigns/community' },
-          { label: 'Thiên tai', href: '/campaigns/disaster' }
+          { label: 'Tất cả chiến dịch', href: '/campaigns' },
+          { label: 'Giáo dục', href: '/campaigns?category=giao-duc' },
+          { label: 'Y tế', href: '/campaigns?category=y-te' },
+          { label: 'Môi trường', href: '/campaigns?category=moi-truong' },
+          { label: 'Cộng đồng', href: '/campaigns?category=cong-dong' },
+          { label: 'Thiên tai', href: '/campaigns?category=thien-tai' },
+          { label: 'Trẻ em', href: '/campaigns?category=tre-em' },
+          { label: 'Người già', href: '/campaigns?category=nguoi-gia' }
         ]
       },
       {
         title: 'Tình trạng',
         items: [
-          { label: 'Khẩn cấp', href: '/campaigns/urgent' },
-          { label: 'Nổi bật', href: '/campaigns/featured' },
-          { label: 'Sắp hoàn thành', href: '/campaigns/nearly-complete' },
-          { label: 'Đã thành công', href: '/campaigns/successful' }
+          { label: 'Đang hoạt động', href: '/campaigns' },
+          { label: 'Đã hoàn thành', href: '/campaigns/completed' }
         ]
       },
       {
-        title: 'Hành động',
+        title: 'Dành cho fundraiser',
         items: [
-          { label: 'Tạo chiến dịch mới', href: '/campaigns/create' },
-          { label: 'Đóng góp của tôi', href: '/campaigns/my-donations' },
-          { label: 'Đã lưu', href: '/campaigns/saved' }
+          { label: 'Tạo chiến dịch', href: '/campaigns/create', requireAuth: true, requireRole: 'fundraiser' },
+          { label: 'Quản lý chiến dịch', href: '/fundraiser/campaigns', requireAuth: true, requireRole: 'fundraiser' }
+        ]
+      },
+      {
+        title: 'Dành cho người dùng',
+        items: [
+          { label: 'Lịch sử đóng góp', href: '/user/donations', requireAuth: true }
         ]
       }
     ]
@@ -70,62 +67,42 @@ export const MENU_ITEMS: MenuItems = {
       {
         title: 'Chủ đề',
         items: [
-          { label: 'Cập nhật chiến dịch', href: '/news/campaign-updates' },
-          { label: 'Câu chuyện thành công', href: '/news/success-stories' },
-          { label: 'Tin cộng đồng', href: '/news/community' },
-          { label: 'Sự kiện', href: '/news/events' }
-        ]
-      },
-      {
-        title: 'Xu hướng',
-        items: [
-          { label: 'Tin nổi bật', href: '/news/trending' },
-          { label: 'Đọc nhiều nhất', href: '/news/most-read' },
-          { label: 'Tin mới nhất', href: '/news/latest' }
+          { label: 'Tất cả tin tức', href: '/news' },
+          { label: 'Tin nổi bật', href: '/news?featured=true' },
+          { label: 'Cộng đồng', href: '/news?category=community' },
+          { label: 'Sự kiện', href: '/news?category=event' },
+          { label: 'Câu chuyện', href: '/news?category=story' },
+          { label: 'Thông báo', href: '/news?category=announcement' }
         ]
       }
-    ],
-    featured: {
-      title: 'Tin tức nổi bật',
-      items: [
-        {
-          date: '24/03/2024',
-          label: 'Chiến dịch "Vì học sinh vùng cao" đạt mục tiêu',
-          href: '/news/1'
-        },
-        {
-          date: '23/03/2024',
-          label: 'Khánh thành 5 cây cầu mới tại Đồng bằng sông Cửu Long',
-          href: '/news/2'
-        }
-      ]
-    }
+    ]
   },
   activities: {
     title: 'Hoạt động',
     sections: [
       {
-        title: 'Sự kiện',
+        title: 'Danh mục hoạt động',
         items: [
-          { label: 'Sắp diễn ra', href: '/activities/upcoming' },
-          { label: 'Đang diễn ra', href: '/activities/ongoing' },
-          { label: 'Đã kết thúc', href: '/activities/past' }
+          { label: 'Tất cả hoạt động', href: '/activities' },
+          { label: 'Sự kiện', href: '/activities?category=event' },
+          { label: 'Hội thảo', href: '/activities?category=workshop' },
+          { label: 'Cộng đồng', href: '/activities?category=community' },
+          { label: 'Tình nguyện', href: '/activities?category=volunteer' }
         ]
       },
       {
-        title: 'Tình nguyện',
+        title: 'Trạng thái',
         items: [
-          { label: 'Cơ hội tình nguyện', href: '/activities/volunteer' },
-          { label: 'Đăng ký tham gia', href: '/activities/register' },
-          { label: 'Nhóm tình nguyện', href: '/activities/teams' }
+          { label: 'Sắp diễn ra', href: '/activities?status=upcoming' },
+          { label: 'Đang diễn ra', href: '/activities?status=ongoing' },
+          { label: 'Đã kết thúc', href: '/activities?status=past' }
         ]
       },
       {
-        title: 'Thành tựu',
+        title: 'Tham gia',
         items: [
-          { label: 'Tác động xã hội', href: '/activities/impact' },
-          { label: 'Ghi nhận', href: '/activities/recognition' },
-          { label: 'Chia sẻ', href: '/activities/testimonials' }
+          { label: 'Hoạt động của tôi', href: '/user/activities', requireAuth: true },
+          { label: 'Tạo hoạt động mới', href: '/activities/create', requireAuth: true, requireRole: 'fundraiser' }
         ]
       }
     ]

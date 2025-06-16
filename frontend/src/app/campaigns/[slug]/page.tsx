@@ -46,7 +46,7 @@ const CampaignDetails = () => {
   const [showCertificate, setShowCertificate] = useState(false);
   const [currentDonation, setCurrentDonation] = useState<Donation | null>(null);
 
-  const suggestedAmounts = [100000, 200000, 500000, 1000000];
+  const suggestedAmounts = [50000, 100000, 200000, 500000]; // Điều chỉnh để phù hợp với số tiền tối thiểu 20k
 
   useEffect(() => {
     const loadCampaign = async () => {
@@ -66,6 +66,49 @@ const CampaignDetails = () => {
       loadCampaign();
     }
   }, [slug]);
+
+  // Check if campaign is completed and show appropriate message
+  const checkCampaignStatus = () => {
+    if (!campaign) return null;
+    
+    if (campaign.status === 'completed') {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-green-800">🎉 Chiến dịch đã hoàn thành!</h3>
+              <p className="text-green-700">
+                Cảm ơn sự đóng góp của tất cả mọi người. Chiến dịch đã nhận được {formatCurrency(campaign.current_amount)}.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (campaign.days_remaining <= 3 && campaign.days_remaining > 0) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-800">⏰ Chiến dịch sắp kết thúc!</h3>
+              <p className="text-yellow-700">
+                Chỉ còn {campaign.days_remaining} ngày để góp phần vào chiến dịch ý nghĩa này.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
 
   // Handle donation logic
   const handleDonate = async () => {
@@ -99,12 +142,20 @@ const CampaignDetails = () => {
     console.log('Final amount calculated:', finalAmount);
     console.log('Donation message:', donationMessage);
 
-    if (!finalAmount || finalAmount < 10000) {
-      console.log('Amount validation failed:', { finalAmount, isLessThan10k: finalAmount < 10000 });
-      setAmountError('Số tiền quyên góp tối thiểu là 10,000 VNĐ');
-      toast.error('Số tiền quyên góp tối thiểu là 10,000 VNĐ');
+    if (!finalAmount || finalAmount < 20000) {
+      console.log('Amount validation failed:', { finalAmount, isLessThan20k: finalAmount < 20000 });
+      setAmountError('Số tiền quyên góp tối thiểu là 20,000 VNĐ');
+      toast.error('Số tiền quyên góp tối thiểu là 20,000 VNĐ');
       return;
     }
+
+    // Kiểm tra không vượt quá số tiền còn thiếu - Bỏ check này để cho phép ủng hộ vượt quá
+    // const remainingAmount = campaign.target_amount - campaign.current_amount;
+    // if (finalAmount > remainingAmount) {
+    //   setAmountError(`Số tiền vượt quá số tiền còn thiếu. Chiến dịch chỉ còn cần ${formatCurrency(remainingAmount)}`);
+    //   toast.error(`Chiến dịch chỉ còn cần ${formatCurrency(remainingAmount)} để đạt mục tiêu`);
+    //   return;
+    // }
 
     if (!paymentMethod) {
       toast.error('Vui lòng chọn phương thức thanh toán');
@@ -214,9 +265,16 @@ const CampaignDetails = () => {
       const numericValue = parseInt(value);
       
       // Validate amount in real-time and set error message
-      if (numericValue < 10000) {
-        setAmountError('Số tiền quyên góp tối thiểu là 10,000 VNĐ');
-        console.log('Amount below minimum (10,000), showing error message');
+      if (numericValue < 20000) {
+        setAmountError('Số tiền quyên góp tối thiểu là 20,000 VNĐ');
+        console.log('Amount below minimum (20,000), showing error message');
+      } else if (campaign) {
+        // Bỏ check vượt quá số tiền còn thiếu để cho phép ủng hộ tự do
+        // const remainingAmount = campaign.target_amount - campaign.current_amount;
+        // if (numericValue > remainingAmount) {
+        //   setAmountError(`Số tiền vượt quá số tiền còn thiếu. Chiến dịch chỉ còn cần ${formatCurrency(remainingAmount)}`);
+        //   console.log('Amount exceeds remaining amount:', { numericValue, remainingAmount });
+        // }
       }
       
       const formattedValue = numericValue.toLocaleString('vi-VN');
@@ -269,6 +327,9 @@ const CampaignDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
+        {/* Campaign Status Alert */}
+        {checkCampaignStatus()}
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column */}
           <div className="space-y-8">
@@ -389,7 +450,7 @@ const CampaignDetails = () => {
                       <div className="text-right">
                         <p className="text-xs text-orange-600">Đã đạt được</p>
                         <p className="text-lg font-semibold text-orange-700">
-                          {campaign.progress_percentage}%
+                          {campaign.progress_percentage.toFixed(2)}%
                         </p>
                       </div>
                     </div>
@@ -431,7 +492,42 @@ const CampaignDetails = () => {
                     Đăng nhập để quyên góp
                   </button>
                 </div>
+              ) : campaign.status === 'completed' || campaign.current_amount >= campaign.target_amount ? (
+                /* Campaign Completed State */
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                      <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-green-800 mb-2">Chiến dịch đã hoàn thành!</h3>
+                    <p className="text-green-700 mb-4">
+                      Cảm ơn tất cả những người đã đóng góp. Chiến dịch đã đạt được mục tiêu {formatCurrency(campaign.target_amount)}.
+                    </p>
+                    <div className="bg-white rounded-lg p-4 border border-green-200">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Tổng đã quyên góp:</span>
+                        <span className="font-semibold text-green-800">{formatCurrency(campaign.current_amount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Số người đóng góp:</span>
+                        <span className="font-semibold text-green-800">{campaign.donations_count || 0} người</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push('/campaigns')}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Xem các chiến dịch khác
+                    </button>
+                  </div>
+                </div>
               ) : (
+                /* Active Campaign Donation Form */
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4">Số tiền quyên góp</h3>
@@ -470,14 +566,15 @@ const CampaignDetails = () => {
                       {amountError && (
                         <p className="mt-2 text-sm text-red-600 flex items-center">
                           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
                           {amountError}
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-gray-500">
-                        Số tiền tối thiểu: 10,000 VNĐ
-                      </p>
+                      <div className="mt-2 flex justify-between text-xs text-gray-500">
+                        <span>Số tiền tối thiểu: 20,000 VNĐ</span>
+                        <span>Tối đa: {formatCurrency(campaign.target_amount - campaign.current_amount)}</span>
+                      </div>
                     </div>
                   </div>
 

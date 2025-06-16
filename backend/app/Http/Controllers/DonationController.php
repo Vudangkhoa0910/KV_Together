@@ -32,37 +32,59 @@ class DonationController extends Controller
 
         // Enhanced validation
         $validated = $request->validate([
-            'amount' => 'required|integer|min:10000',
+            'amount' => 'required|integer|min:20000', // Giảm từ 10k xuống 20k để phù hợp
             'message' => 'nullable|string|max:500',
             'is_anonymous' => 'boolean',
             'payment_method' => 'required|in:momo,vnpay,bank_transfer'
         ], [
             'amount.required' => 'Vui lòng nhập số tiền quyên góp',
             'amount.integer' => 'Số tiền phải là số nguyên',
-            'amount.min' => 'Số tiền quyên góp tối thiểu là 10,000đ',
+            'amount.min' => 'Số tiền quyên góp tối thiểu là 20,000đ', // Cập nhật thông báo
             'message.max' => 'Lời nhắn không được vượt quá 500 ký tự',
             'payment_method.required' => 'Vui lòng chọn phương thức thanh toán',
             'payment_method.in' => 'Phương thức thanh toán không hợp lệ'
         ]);
 
-        // Check if campaign is already complete or would exceed target
-        $remainingAmount = $campaign->target_amount - $campaign->current_amount;
-        if ($remainingAmount <= 0) {
+        // Check campaign status - chỉ dừng nhận tiền khi status = completed
+        if ($campaign->status === 'completed') {
             return response()->json([
-                'message' => 'Chiến dịch đã đạt đủ mục tiêu'
+                'message' => 'Chiến dịch này đã hoàn thành và đã dừng nhận quyên góp'
             ], 400);
         }
         
-        if ($validated['amount'] > $remainingAmount) {
-            return response()->json([
-                'message' => "Chiến dịch chỉ còn cần " . number_format($remainingAmount) . "đ để đạt mục tiêu"
-            ], 400);
-        }
-
-        // Check campaign status
         if (!$campaign->isActive()) {
             return response()->json([
                 'message' => 'Chiến dịch này hiện không nhận quyên góp'
+            ], 400);
+        }
+
+        // Kiểm tra số tiền còn thiếu
+        $remainingAmount = $campaign->target_amount - $campaign->current_amount;
+        
+        if ($remainingAmount <= 0) {
+            return response()->json([
+                'message' => 'Chiến dịch này đã đạt đủ mục tiêu và không còn cần quyên góp thêm'
+            ], 400);
+        }
+        
+        // Strict limit: maximum 105% of target amount total
+        $absoluteMaxTotal = intval($campaign->target_amount * 1.05);
+        $maxRemainingAllowed = $absoluteMaxTotal - $campaign->current_amount;
+        
+        if ($maxRemainingAllowed <= 0) {
+            return response()->json([
+                'message' => 'Chiến dịch này đã đạt mức tối đa cho phép và không thể nhận thêm quyên góp'
+            ], 400);
+        }
+        
+        // Limit donation to not exceed the remaining allowed amount
+        $maxAllowedAmount = min($maxRemainingAllowed, $remainingAmount);
+        
+        if ($validated['amount'] > $maxAllowedAmount) {
+            return response()->json([
+                'message' => "Số tiền quyên góp tối đa cho chiến dịch này là " . number_format($maxAllowedAmount) . "đ (còn thiếu " . number_format($remainingAmount) . "đ)",
+                'remaining_amount' => $remainingAmount,
+                'max_allowed' => $maxAllowedAmount
             ], 400);
         }
 
@@ -155,8 +177,26 @@ class DonationController extends Controller
             'account_number' => $validated['account_number']
         ]);
 
-        // Update campaign amount
-        $donation->campaign->increment('current_amount', $donation->amount);
+        // Update campaign amount - strict control to never exceed 105% of target
+        $campaign = $donation->campaign;
+        $newAmount = $campaign->current_amount + $donation->amount;
+        
+        // Absolute maximum is 105% of target - NEVER exceed this
+        $absoluteMaxAmount = intval($campaign->target_amount * 1.05);
+        $actualAmount = min($newAmount, $absoluteMaxAmount);
+        
+        $campaign->update(['current_amount' => $actualAmount]);
+        
+        // Check and auto-complete campaign if target reached
+        $campaign = $campaign->fresh();
+        if ($campaign->current_amount >= $campaign->target_amount && $campaign->status === 'active') {
+            $campaign->update(['status' => 'completed']);
+            
+            // Notify organizer about campaign completion
+            if (class_exists('\App\Notifications\CampaignCompleted')) {
+                $campaign->organizer->notify(new \App\Notifications\CampaignCompleted($campaign));
+            }
+        }
 
         // Send notification to donor
         $donation->user->notify(new DonationReceived($donation));

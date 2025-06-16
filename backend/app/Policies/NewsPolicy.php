@@ -12,26 +12,53 @@ class NewsPolicy
 
     public function viewAny(User $user)
     {
-        return $user->role === 'admin';
+        return $user->hasRole('admin');
     }
 
-    public function view(User $user, News $news)
+    public function view(?User $user, News $news)
     {
-        return true;
+        // Published news can be viewed by everyone
+        if ($news->status === 'published') {
+            return true;
+        }
+        
+        // Draft news can only be viewed by author or admin
+        return $user && ($user->id === $news->author_id || $user->hasRole('admin'));
     }
 
     public function create(User $user)
     {
-        return in_array($user->role, ['admin']);
+        // Users, fundraisers, and admins can create news
+        return $user->canCreateNews();
     }
 
     public function update(User $user, News $news)
     {
-        return $user->role === 'admin' || $user->id === $news->author_id;
+        // Only author or admin can update
+        return $user->hasRole('admin') || $user->id === $news->author_id;
     }
 
     public function delete(User $user, News $news)
     {
-        return $user->role === 'admin' || $user->id === $news->author_id;
+        // Only author or admin can delete
+        return $user->hasRole('admin') || $user->id === $news->author_id;
+    }
+
+    public function setFeatured(User $user, News $news)
+    {
+        // Only admin can set featured status
+        return $user->hasRole('admin');
+    }
+
+    public function publish(User $user, News $news)
+    {
+        // Author can publish their own news, admin can publish any news
+        return $user->hasRole('admin') || $user->id === $news->author_id;
+    }
+
+    public function moderate(User $user)
+    {
+        // Only admin can moderate news
+        return $user->hasRole('admin');
     }
 }

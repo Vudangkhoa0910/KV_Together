@@ -10,6 +10,7 @@ import {
   CurrencyDollarIcon,
   ChartBarIcon,
   NewspaperIcon,
+  CalendarIcon,
   TagIcon,
   ArrowLeftOnRectangleIcon,
   Cog6ToothIcon,
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Quản lý quyên góp', href: '/admin/donations', icon: CurrencyDollarIcon },
   { name: 'Thống kê báo cáo', href: '/admin/analytics', icon: ChartBarIcon },
   { name: 'Quản lý tin tức', href: '/admin/news', icon: NewspaperIcon },
+  { name: 'Quản lý hoạt động', href: '/admin/activities', icon: CalendarIcon },
   { name: 'Quản lý danh mục', href: '/admin/categories', icon: TagIcon },
   { name: 'Cài đặt hệ thống', href: '/admin/settings', icon: Cog6ToothIcon },
 ];

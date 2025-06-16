@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\TopDonorsController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\BlogController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Api\CampaignStatusController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,18 +46,49 @@ Route::get('/auth/user', [AuthController::class, 'user'])->middleware('auth:sanc
 // Categories
 Route::get('/categories', [CategoryController::class, 'index']);
 
+// News routes
+Route::prefix('news')->group(function () {
+    Route::get('/', [NewsController::class, 'index']);
+    Route::get('/featured', [NewsController::class, 'featured']);
+    Route::get('/categories', [NewsController::class, 'categories']);
+    Route::get('/{slug}', [NewsController::class, 'show']);
+});
+
+// Activities routes  
+Route::prefix('activities')->group(function () {
+    Route::get('/', [ActivityController::class, 'index']);
+    Route::get('/featured', [ActivityController::class, 'featured']);
+    Route::get('/categories', [ActivityController::class, 'categories']);
+    Route::get('/{slug}', [ActivityController::class, 'show']);
+});
+
+// Authenticated news routes
+Route::middleware('auth:sanctum')->prefix('news')->group(function () {
+    Route::post('/', [NewsController::class, 'store']);
+    Route::put('/{news}', [NewsController::class, 'update']);
+    Route::delete('/{news}', [NewsController::class, 'destroy']);
+});
+
+// Authenticated activities routes
+Route::middleware('auth:sanctum')->prefix('activities')->group(function () {
+    Route::post('/', [ActivityController::class, 'store']);
+    Route::put('/{activity}', [ActivityController::class, 'update']);
+    Route::delete('/{activity}', [ActivityController::class, 'destroy']);
+});
+
 Route::prefix('campaigns')->group(function () {
     Route::get('/', [CampaignController::class, 'index']);
     Route::get('/featured', [CampaignController::class, 'featured']);
+    Route::get('/completed', [CampaignController::class, 'getCompleted']);
+    Route::get('/recent-successful', [CampaignController::class, 'getRecentSuccessful']);
+    Route::get('/urgent', [CampaignController::class, 'getUrgent']);
     Route::get('/{slug}', [CampaignController::class, 'show']);
 });
 
-Route::prefix('news')->group(function () {
-    Route::get('/', [NewsController::class, 'index']);
-    Route::get('/{news}', [NewsController::class, 'show']);
-});
-
 Route::get('/stats', [StatsController::class, 'index']);
+Route::get('/stats/monthly', [StatsController::class, 'getMonthlyStats']);
+Route::get('/top-donors', [StatsController::class, 'getTopDonors']);
+Route::get('/top-organizations', [TopDonorsController::class, 'getTopOrganizations']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -91,9 +124,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{campaign}/updates', [CampaignController::class, 'updates']);
         Route::post('/{campaign}/updates', [CampaignController::class, 'storeUpdate']);
     });
-
-    // Activities
-    Route::apiResource('activities', ActivityController::class);
 
     // Blogs
     Route::apiResource('blogs', BlogController::class);
@@ -135,8 +165,19 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/campaigns/{id}/approve', [AdminCampaignController::class, 'approve']);
     Route::post('/campaigns/{id}/reject', [AdminCampaignController::class, 'reject']);
     
+    // Campaign Status Monitoring
+    Route::prefix('campaigns-status')->group(function () {
+        Route::get('/summary', [CampaignStatusController::class, 'getStatusSummary']);
+        Route::get('/attention', [CampaignStatusController::class, 'getCampaignsRequiringAttention']);
+        Route::post('/{campaign}/complete', [CampaignStatusController::class, 'markAsCompleted']);
+        Route::get('/health-check', [CampaignStatusController::class, 'healthCheck']);
+    });
+    
     // Analytics
     Route::get('/analytics/users', [AdminAnalyticsController::class, 'users']);
     Route::get('/analytics/campaigns', [AdminAnalyticsController::class, 'campaigns']);
     Route::get('/analytics/donations', [AdminAnalyticsController::class, 'donations']);
+    
+    // News management
+    Route::get('/news', [NewsController::class, 'adminIndex']);
 });

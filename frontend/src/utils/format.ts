@@ -64,7 +64,8 @@ export function formatDate(date: string | Date): string {
 }
 
 export function formatProgressPercentage(current: number, target: number): string {
-  return Math.min(Math.round((current / target) * 100), 100) + '%';
+  const percentage = Math.min((current / target) * 100, 100);
+  return percentage.toFixed(2) + '%';
 }
 
 export function getCampaignStatus(progress: number, daysLeft: number): {
