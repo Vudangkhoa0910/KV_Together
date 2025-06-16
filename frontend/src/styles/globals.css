@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './home-enhanced.css';
+
 :root {
   --primary: #E84D1C;
   --primary-light: #FFA726;
@@ -25,9 +27,13 @@ body {
 
 /* Header Styles */
 .header {
-  @apply fixed top-0 left-0 right-0 z-50;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
   height: var(--header-height);
-  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+  /* Background được định nghĩa trong header.css */
 }
 
 .header-content {

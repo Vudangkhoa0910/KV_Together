@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost', 'api.vietqr.io', 'img.vietqr.io'],
     remotePatterns: [
       {
         protocol: 'http',

@@ -32,8 +32,10 @@ function isAxiosError(error: any): error is AxiosError {
 // Request interceptor
 axiosInstance.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
-    // Get token from localStorage or session storage
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    // Get token from localStorage or session storage - check if we're in browser
+    const token = typeof window !== 'undefined' 
+      ? (localStorage.getItem('token') || sessionStorage.getItem('token'))
+      : null;
     
     if (token && config.headers) {
       try {
@@ -198,6 +200,9 @@ axiosInstance.interceptors.response.use(
 
 // Helper function to get cookies
 function getCookie(name: string): string | null {
+  if (typeof window === 'undefined') {
+    return null; // Return null during server-side rendering
+  }
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
   return match ? decodeURIComponent(match[2]) : null;
 }
