@@ -27,63 +27,90 @@ class DonationSeeder extends Seeder
         }
 
         foreach ($campaigns as $campaign) {
-            // Create realistic donation scenarios
+            // Nếu campaign đã completed thì bỏ qua seeder donation
+            if ($campaign->status === 'completed') continue;
+            
+            // Create realistic donation scenarios with STRICT control
             $targetAmount = $campaign->target_amount;
             $progressScenarios = [
-                'new' => [5, 20],        // 5-20% progress (new campaigns)
-                'developing' => [20, 60], // 20-60% progress (developing campaigns)
-                'successful' => [60, 95], // 60-95% progress (successful campaigns)
-                'completed' => [95, 100], // 95-100+ progress (completed/overfunded)
+                'new' => [1, 15],        // 1-15% progress (new campaigns)
+                'developing' => [15, 45], // 15-45% progress (developing campaigns)  
+                'successful' => [45, 85], // 45-85% progress (successful campaigns)
             ];
             
-            // Randomly assign scenario weights (higher chance for realistic scenarios)
             $scenario = $this->getWeightedScenario();
-            [$minProgress, $maxProgress] = $progressScenarios[$scenario];
+            if (!isset($progressScenarios[$scenario])) $scenario = 'developing';
             
-            // Calculate target current amount based on scenario
+            [$minProgress, $maxProgress] = $progressScenarios[$scenario];
             $targetProgress = rand($minProgress, $maxProgress) / 100;
+            
+            // ABSOLUTE MAXIMUM: never exceed 105% of target
+            $absoluteMaxAmount = intval($targetAmount * 1.05);
             $targetCurrentAmount = intval($targetAmount * $targetProgress);
             
-            // Generate donations to reach this target
-            $remainingAmount = $targetCurrentAmount;
             $donationCount = 0;
-            $maxDonations = rand(8, 25); // Reasonable number of donations
-            $usedUserIds = []; // Track users who have already donated to this campaign
+            $maxDonations = rand(2, 5); // Further reduced for better control
+            $usedUserIds = [];
             
-            while ($remainingAmount > 0 && $donationCount < $maxDonations) {
-                // Create varied donation amounts based on remaining amount and campaign size
-                $donationAmount = $this->generateRealisticDonationAmount($remainingAmount, $targetAmount, $donationCount, $maxDonations);
+            while ($campaign->current_amount < $targetCurrentAmount && $donationCount < $maxDonations) {
+                $remainingToTarget = $targetCurrentAmount - $campaign->current_amount;
+                $remainingToAbsoluteMax = $absoluteMaxAmount - $campaign->current_amount;
+                
+                // Use the smaller of the two limits - this is critical
+                $actualRemaining = min($remainingToTarget, $remainingToAbsoluteMax);
+                
+                if ($actualRemaining <= 0) break;
+                
+                $donationAmount = $this->generateControlledDonationAmount($actualRemaining, $targetAmount, $donationCount, $maxDonations);
                 
                 if ($donationAmount <= 0) break;
                 
-                // Select a user (prefer new users, but allow repeat donors if needed)
+                // TRIPLE CHECK: never exceed our strict limits
+                $donationAmount = min($donationAmount, $actualRemaining);
+                
                 $availableUsers = $users->whereNotIn('id', $usedUserIds);
                 if ($availableUsers->isEmpty() || (count($usedUserIds) >= 3 && rand(1, 100) <= 30)) {
-                    // If no new users available or 30% chance for repeat donation
                     $selectedUser = $users->random();
                 } else {
-                    // Select a new user who hasn't donated to this campaign yet
                     $selectedUser = $availableUsers->random();
                     $usedUserIds[] = $selectedUser->id;
                 }
                 
-                $donation = Donation::create([
+                Donation::create([
                     'campaign_id' => $campaign->id,
                     'user_id' => $selectedUser->id,
                     'amount' => $donationAmount,
                     'message' => $this->getRandomMessage(),
                     'status' => 'completed',
                     'payment_method' => ['momo', 'bank_transfer', 'vnpay'][rand(0, 2)],
-                    'created_at' => now()->subDays(rand(0, 30)), // Random date within the last 30 days
+                    'is_stats' => false, // These are real donations, not stats
+                    'created_at' => now()->subDays(rand(0, 30)),
                     'updated_at' => now(),
                 ]);
-
-                // Update campaign current amount
-                $campaign->increment('current_amount', $donationAmount);
-                $remainingAmount -= $donationAmount;
+                
+                // Update campaign amount with ABSOLUTE maximum control
+                $newAmount = $campaign->current_amount + $donationAmount;
+                
+                // NEVER exceed 105% of target - this is the absolute ceiling
+                $actualAmount = min($newAmount, $absoluteMaxAmount);
+                
+                $campaign->update(['current_amount' => $actualAmount]);
                 $donationCount++;
+                
+                // Refresh campaign and check completion
+                $campaign = $campaign->fresh();
+                
+                // Auto-complete if reached target
+                if ($campaign->current_amount >= $campaign->target_amount && $campaign->status === 'active') {
+                    $campaign->update(['status' => 'completed']);
+                }
+                
+                // STOP if we've reached our absolute limit
+                if ($campaign->current_amount >= $absoluteMaxAmount) {
+                    break;
+                }
             }
-
+            
             $finalProgress = round(($campaign->fresh()->current_amount / $campaign->target_amount) * 100, 1);
             $this->command->info("Created {$donationCount} donations for campaign: {$campaign->title} (Progress: {$finalProgress}%)");
         }
@@ -92,9 +119,9 @@ class DonationSeeder extends Seeder
     private function getWeightedScenario(): string 
     {
         $weights = [
-            'new' => 30,         // 30% chance
-            'developing' => 40,  // 40% chance  
-            'successful' => 25,  // 25% chance
+            'new' => 40,         // 40% chance - more new campaigns
+            'developing' => 35,  // 35% chance  
+            'successful' => 20,  // 20% chance
             'completed' => 5     // 5% chance
         ];
         
@@ -111,43 +138,47 @@ class DonationSeeder extends Seeder
         return 'developing'; // fallback
     }
     
-    private function generateRealisticDonationAmount(int $remainingAmount, int $targetAmount, int $donationCount, int $maxDonations): int
+    private function generateControlledDonationAmount(int $remainingAmount, int $targetAmount, int $donationCount, int $maxDonations): int
     {
-        // Calculate proportional donation ranges based on campaign size
-        if ($targetAmount <= 50000000) { // Small campaigns (<=50M)
-            $ranges = [50000, 500000, 2000000]; // 50k-2M
-        } elseif ($targetAmount <= 200000000) { // Medium campaigns (<=200M)
-            $ranges = [100000, 1000000, 5000000]; // 100k-5M
-        } else { // Large campaigns (>200M)
-            $ranges = [200000, 2000000, 10000000]; // 200k-10M
+        // Much more conservative donation amounts
+        if ($targetAmount <= 5000000) { // Small campaigns (<=5M)
+            $ranges = [20000, 30000, 100000]; // 20k-100k (reduced)
+        } elseif ($targetAmount <= 15000000) { // Medium campaigns (<=15M)
+            $ranges = [20000, 50000, 200000]; // 20k-200k (reduced)
+        } else { // Large campaigns (>15M)
+            $ranges = [50000, 100000, 500000]; // 50k-500k (much reduced)
         }
         
-        // Adjust donation size based on remaining amount and donation position
+        // Conservative approach based on position
         $progressInDonations = $donationCount / $maxDonations;
         
-        if ($progressInDonations < 0.3) {
+        if ($progressInDonations < 0.5) {
             // Early donations: smaller amounts
+            $maxAmount = min($ranges[0], $remainingAmount);
+            $minAmount = min($ranges[0] * 0.5, $maxAmount);
+        } elseif ($progressInDonations < 0.8) {
+            // Mid donations: moderate amounts
             $maxAmount = min($ranges[1], $remainingAmount);
             $minAmount = min($ranges[0], $maxAmount);
-        } elseif ($progressInDonations < 0.7) {
-            // Mid donations: varied amounts
-            $maxAmount = min($ranges[2], $remainingAmount);
-            $minAmount = min($ranges[0], $maxAmount);
         } else {
-            // Late donations: try to complete the campaign
+            // Final donations: try to complete but be conservative
             $avgRemaining = intval($remainingAmount / max(1, $maxDonations - $donationCount));
-            $maxAmount = min($avgRemaining * 2, $remainingAmount);
+            $maxAmount = min($avgRemaining, $ranges[1], $remainingAmount);
             $minAmount = min($ranges[0], $maxAmount);
         }
         
         // Ensure minimum donation amount
-        if ($minAmount < 50000) $minAmount = 50000;
+        if ($minAmount < 20000) $minAmount = 20000;
         if ($maxAmount < $minAmount) $maxAmount = $minAmount;
         
-        // Don't exceed remaining amount
+        // CRITICAL: never exceed remaining amount
         $maxAmount = min($maxAmount, $remainingAmount);
         
-        return $minAmount >= $maxAmount ? $maxAmount : rand($minAmount, $maxAmount);
+        // Generate amount within safe bounds
+        $finalAmount = $minAmount >= $maxAmount ? $maxAmount : rand($minAmount, $maxAmount);
+        
+        // FINAL SAFETY CHECK: absolutely never exceed remaining
+        return min($finalAmount, $remainingAmount);
     }
     
     private function getRandomMessage(): string
