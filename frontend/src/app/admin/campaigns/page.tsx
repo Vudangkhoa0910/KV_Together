@@ -325,7 +325,7 @@ export default function CampaignsPage() {
                             </p>
                           )}
                           <p className="text-sm text-gray-900">
-                            Tiến độ: {selectedCampaign.progress_percentage}%
+                            Tiến độ: {selectedCampaign.progress_percentage.toFixed(2)}%
                           </p>
                           <p className="text-sm text-gray-900">
                             Thời gian: {formatDate(selectedCampaign.start_date)} -{' '}
