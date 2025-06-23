@@ -12,6 +12,7 @@ import VietQRDonation from '@/components/donations/VietQRDonation';
 import Progress from '@/components/Progress';
 import ShareModal from '@/components/modals/ShareModal';
 import DonationCertificate from '@/components/donations/DonationCertificate';
+import CreditsDonation from '@/components/wallet/CreditsDonation';
 import type { Donation, DonationResponse } from '@/types/donation';
 import '@/styles/campaign-details.css';
 
@@ -529,7 +530,33 @@ const CampaignDetails = () => {
               ) : (
                 /* Active Campaign Donation Form */
                 <div className="space-y-6">
-                  <div>
+                  {/* Credits Donation Section */}
+                  <CreditsDonation 
+                    campaign={{
+                      id: campaign.id,
+                      title: campaign.title,
+                      target_amount: campaign.target_amount,
+                      current_amount: campaign.current_amount,
+                      status: campaign.status
+                    }}
+                    onSuccess={() => {
+                      // Refresh campaign data after successful credits donation
+                      const loadCampaign = async () => {
+                        try {
+                          const data = await api.getCampaignBySlug(slug);
+                          setCampaign(data);
+                        } catch (err) {
+                          console.error('Failed to reload campaign:', err);
+                        }
+                      };
+                      loadCampaign();
+                      toast.success('Cảm ơn bạn đã ủng hộ chiến dịch thiện nguyện bằng KV Credits!');
+                    }}
+                  />
+
+                  {/* Regular Donation Form */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold mb-4">Ủng hộ bằng tiền mặt</h3>
                     <h3 className="text-lg font-semibold mb-4">Số tiền quyên góp</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {suggestedAmounts.map((amount) => (
