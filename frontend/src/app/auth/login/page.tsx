@@ -7,29 +7,48 @@ import Link from 'next/link';
 import Image from 'next/image';
 import loginBg from '../../../../public/images/Login.jpg';
 import { useAuth } from '../../../contexts/AuthContext';
+import { validateRedirectUrl } from '@/utils/redirectUtils';
 
 export default function Login() {
   const [error, setError] = useState('');
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams() || new URLSearchParams();
   const { login } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm();
+
+  // Helper function to show login errors with better UX
+  const handleLoginError = (err: any) => {
+    if (err.response?.status === 429) {
+      setError('Quá nhiều lần thử. Vui lòng thử lại sau ít phút.');
+    } else {
+      setError(err.response?.data?.message || 'Đăng nhập thất bại');
+    }
+  };
 
   const onSubmit = async (data: any) => {
     try {
       const response = await login(data.email, data.password);
-      const redirect = searchParams.get('redirect') || '/';
+      const redirectParam = searchParams.get('redirect');
+      const safeRedirect = validateRedirectUrl(redirectParam);
+      
+      // Debug the redirect logic
+      console.log('Login redirect:', {
+        original: redirectParam,
+        cleaned: safeRedirect
+      });
       
       // Redirect based on user role
-      if (response.user.role.slug === 'admin') {
+      if (response.user.role?.slug === 'admin') {
         router.push('/admin');
-      } else if (response.user.role.slug === 'fundraiser') {
+      } else if (response.user.role?.slug === 'fundraiser') {
         router.push('/fundraiser');
       } else {
-        router.push(redirect);
+        // Default to home page if safeRedirect is /auth/login (avoiding loops)
+        const finalRedirect = safeRedirect.includes('/auth/login') ? '/' : safeRedirect;
+        router.push(finalRedirect);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Đăng nhập thất bại');
+      handleLoginError(err);
     }
   };
 

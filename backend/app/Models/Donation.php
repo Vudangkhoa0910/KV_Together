@@ -20,12 +20,16 @@ class Donation extends Model
         'transaction_id',
         'is_anonymous',
         'bank_name',
-        'account_number'
+        'account_number',
+        // Funding preferences
+        'funding_preference',
+        'rollover_consent'
     ];
 
     protected $casts = [
         'amount' => 'integer',
-        'is_anonymous' => 'boolean'
+        'is_anonymous' => 'boolean',
+        'rollover_consent' => 'boolean'
     ];
 
     protected $attributes = [

@@ -15,6 +15,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DonationController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
@@ -147,23 +148,62 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Admin routes
+// Admin routes - new unified admin controller
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+    // Dashboard
+    Route::get('/stats', [AdminController::class, 'getStats']);
+    Route::get('/activities', [AdminController::class, 'getActivities']);
+    
+    // Users
+    Route::get('/users', [AdminController::class, 'getUsers']);
+    Route::post('/users/{id}/approve', [AdminController::class, 'approveUser']);
+    Route::post('/users/{id}/suspend', [AdminController::class, 'suspendUser']);
+    Route::put('/users/{id}/role', [AdminController::class, 'updateUserRole']);
+    
+    // Campaigns
+    Route::get('/campaigns', [AdminController::class, 'getCampaigns']);
+    Route::post('/campaigns/{id}/approve', [AdminController::class, 'approveCampaign']);
+    Route::post('/campaigns/{id}/reject', [AdminController::class, 'rejectCampaign']);
+    
+    // Donations
+    Route::get('/donations', [AdminController::class, 'getDonations']);
+    
+    // News
+    Route::get('/news', [AdminController::class, 'getNews']);
+    Route::post('/news/{id}/publish', [AdminController::class, 'publishNews']);
+    Route::post('/news/{id}/archive', [AdminController::class, 'archiveNews']);
+    Route::delete('/news/{id}', [AdminController::class, 'deleteNews']);
+    
+    // Analytics
+    Route::get('/analytics', [AdminController::class, 'getAnalytics']);
+});
+
+// Admin routes - legacy controllers
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     // Dashboard stats
-    Route::get('/stats', [AdminStatsController::class, 'index']);
+    Route::get('/legacy/stats', [AdminStatsController::class, 'index']);
     
     // Users management
-    Route::get('/users', [AdminUserController::class, 'index']);
-    Route::get('/users/{id}', [AdminUserController::class, 'show']);
-    Route::post('/users/{id}/approve', [AdminUserController::class, 'approve']);
-    Route::post('/users/{id}/reject', [AdminUserController::class, 'reject']);
-    Route::post('/users/{id}/block', [AdminUserController::class, 'block']);
-    Route::post('/users/{id}/unblock', [AdminUserController::class, 'unblock']);
+    Route::get('/legacy/users', [AdminUserController::class, 'index']);
+    Route::get('/legacy/users/{id}', [AdminUserController::class, 'show']);
+    Route::post('/legacy/users/{id}/approve', [AdminUserController::class, 'approve']);
+    Route::post('/legacy/users/{id}/reject', [AdminUserController::class, 'reject']);
+    Route::post('/legacy/users/{id}/block', [AdminUserController::class, 'block']);
+    Route::post('/legacy/users/{id}/unblock', [AdminUserController::class, 'unblock']);
     
     // Campaigns management
-    Route::get('/campaigns', [AdminCampaignController::class, 'index']);
-    Route::get('/campaigns/{id}', [AdminCampaignController::class, 'show']);
-    Route::post('/campaigns/{id}/approve', [AdminCampaignController::class, 'approve']);
-    Route::post('/campaigns/{id}/reject', [AdminCampaignController::class, 'reject']);
+    Route::get('/legacy/campaigns', [AdminCampaignController::class, 'index']);
+    Route::get('/legacy/campaigns/{id}', [AdminCampaignController::class, 'show']);
+    Route::post('/legacy/campaigns/{id}/approve', [AdminCampaignController::class, 'approve']);
+    Route::post('/legacy/campaigns/{id}/reject', [AdminCampaignController::class, 'reject']);
+    
+    // Campaign Status Monitoring
+    Route::prefix('campaigns-status')->group(function () {
+        Route::get('/summary', [CampaignStatusController::class, 'getStatusSummary']);
+        Route::get('/attention', [CampaignStatusController::class, 'getCampaignsRequiringAttention']);
+        Route::post('/{campaign}/complete', [CampaignStatusController::class, 'markAsCompleted']);
+        Route::get('/health-check', [CampaignStatusController::class, 'healthCheck']);
+    });
     
     // Campaign Status Monitoring
     Route::prefix('campaigns-status')->group(function () {
@@ -180,4 +220,13 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     
     // News management
     Route::get('/news', [NewsController::class, 'adminIndex']);
+});
+
+// Virtual Wallet routes (authenticated users only)
+Route::middleware('auth:sanctum')->prefix('wallet')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\VirtualWalletController::class, 'getWallet']);
+    Route::get('/transactions', [App\Http\Controllers\Api\VirtualWalletController::class, 'getTransactions']);
+    Route::get('/statistics', [App\Http\Controllers\Api\VirtualWalletController::class, 'getStatistics']);
+    Route::post('/use-credits', [App\Http\Controllers\Api\VirtualWalletController::class, 'useCredits']);
+    Route::post('/transfer', [App\Http\Controllers\Api\VirtualWalletController::class, 'transferCredits']);
 });

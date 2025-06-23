@@ -1,0 +1,34 @@
+/* Additional MegaMenu fixes for <a> elements */
+.menu-item-link {
+    display: block;
+    color: #4B5563;
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    position: relative;
+    padding-left: 1.5rem;
+    text-decoration: none;
+}
+
+.menu-item-link:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #FFA726;
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.menu-item-link:hover {
+    color: #E84D1C;
+    transform: translateX(5px);
+}
+
+.menu-item-link:hover:before {
+    opacity: 1;
+}

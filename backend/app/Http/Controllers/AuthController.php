@@ -64,4 +64,82 @@ class AuthController extends Controller
             ],
         ]);
     }
-} 
+
+    public function user(Request $request)
+    {
+        $user = $request->user()->load('role');
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar,
+                'role' => [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
+                    'slug' => $user->role->slug,
+                ],
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+            ],
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Đăng xuất thành công'
+        ]);
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        // Get default user role
+        $userRole = \App\Models\Role::where('slug', 'user')->first();
+        if (!$userRole) {
+            return response()->json([
+                'message' => 'Default user role not found. Please contact administrator.'
+            ], 500);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'phone' => $request->phone,
+            'role_id' => $userRole->id,
+            'status' => 'active',
+        ]);
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar,
+                'role' => [
+                    'id' => $userRole->id,
+                    'name' => $userRole->name,
+                    'slug' => $userRole->slug,
+                ],
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+            ],
+        ], 201);
+    }
+}

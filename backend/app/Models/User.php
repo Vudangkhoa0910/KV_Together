@@ -83,6 +83,24 @@ class User extends Authenticatable
         return $this->hasOne(FundraiserProfile::class);
     }
 
+    public function virtualWallet(): HasOne
+    {
+        return $this->hasOne(VirtualWallet::class);
+    }
+
+    /**
+     * Get or create virtual wallet for user
+     */
+    public function getWallet(): VirtualWallet
+    {
+        return $this->virtualWallet ?: $this->virtualWallet()->create([
+            'balance' => 0,
+            'total_earned' => 0,
+            'total_spent' => 0,
+            'tier' => VirtualWallet::TIER_BRONZE
+        ]);
+    }
+
     public function isFundraiser(): bool
     {
         return $this->role->slug === 'fundraiser';

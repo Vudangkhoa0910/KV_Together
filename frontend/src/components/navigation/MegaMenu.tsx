@@ -47,7 +47,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ sections, featured, isVisible, show
     }
 
     // If requires specific role
-    if (item.requireRole && (!user || user.role.slug !== item.requireRole)) {
+    if (item.requireRole && (!user || !user.role || user.role?.slug !== item.requireRole)) {
       return false;
     }
 

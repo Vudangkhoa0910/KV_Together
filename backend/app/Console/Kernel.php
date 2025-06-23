@@ -24,6 +24,12 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->runInBackground();
 
+        // Xử lý chiến dịch hết hạn theo funding policy mỗi giờ
+        $schedule->command('campaigns:process-expired')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+
         // Dọn dẹp thông báo cũ mỗi ngày
         $schedule->command('notifications:cleanup')
                  ->daily()
