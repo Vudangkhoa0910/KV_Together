@@ -39,41 +39,23 @@ axiosInstance.interceptors.request.use(
     
     if (token && config.headers) {
       try {
-        // Check if token has valid format before decoding
-        const tokenParts = token.split('.');
-        if (tokenParts.length !== 3) {
-          console.warn('Invalid token format, removing token');
-          localStorage.removeItem('token');
-          sessionStorage.removeItem('token');
-          return config;
+        // Check if token is a Laravel Sanctum token (format: number|hash)
+        if (token.includes('|')) {
+          // Sanctum token format is valid, just use it
+          config.headers.Authorization = `Bearer ${token}`;
         }
-
-        const decoded: any = jwtDecode(token);
-        
-        // If token is expired or about to expire in 5 minutes
-        if (decoded.exp && decoded.exp * 1000 < Date.now() + 300000) {
-          try {
-            const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
-              withCredentials: true,
-              headers: { 
-                'Authorization': `Bearer ${token}`,
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN')
-              }
-            });
-            
-            const newToken = response.data.token;
-            if (newToken) {
-              localStorage.setItem('token', newToken);
-              config.headers.Authorization = `Bearer ${newToken}`;
-            }
-          } catch (refreshError) {
-            // If refresh fails, redirect to login
-            console.error('Token refresh failed:', refreshError);
+        // Check if it's a JWT token
+        else {
+          const tokenParts = token.split('.');
+          if (tokenParts.length !== 3) {
+            console.warn('Invalid token format, removing token');
             localStorage.removeItem('token');
             sessionStorage.removeItem('token');
-            // Don't redirect here as it may interfere with navigation
+            return config;
           }
-        } else {
+
+          // Don't auto-refresh token on every request to avoid loops
+          // Only perform token refresh in response interceptor when 401 occurs
           config.headers.Authorization = `Bearer ${token}`;
         }
       } catch (error) {
@@ -127,16 +109,27 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       if (!isRefreshing) {
-        isRefreshing = true;
-
-        try {
-          // Try to refresh the token or get a new one
-          const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
-            withCredentials: true,
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
+        isRefreshing = true;          // Add debounce mechanism to prevent rapid refresh attempts
+          const lastRefreshAttempt = sessionStorage.getItem('lastTokenRefresh');
+          const now = Date.now();
+          
+          if (lastRefreshAttempt && now - parseInt(lastRefreshAttempt) < 10000) {
+            // If we tried to refresh less than 10 seconds ago, prevent another refresh
+            isRefreshing = false;
+            return Promise.reject({ message: 'Rate limiting token refresh' });
+          }
+          
+          // Store the current timestamp
+          sessionStorage.setItem('lastTokenRefresh', now.toString());
+          
+          try {
+            // Try to refresh the token or get a new one
+            const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
+              withCredentials: true,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
+            });
 
           const newToken = response.data.token;
 
@@ -155,9 +148,11 @@ axiosInstance.interceptors.response.use(
           }
         } catch (refreshError) {
           processQueue(refreshError as Error, null);
-          // If refresh fails, redirect to login with return URL
-          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.href = `/auth/login?redirect=${returnUrl}`;
+          // If refresh fails, redirect to login without preserving the current URL to avoid loops
+          // Only redirect if we're not already on the login page
+          if (!window.location.pathname.includes('/auth/login')) {
+            window.location.href = '/auth/login';
+          }
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;

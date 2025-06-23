@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { api, News } from '@/services/api';
 
 export default function NewsDetailPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = params?.slug;
   const [news, setNews] = useState<News | null>(null);
   const [relatedNews, setRelatedNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
