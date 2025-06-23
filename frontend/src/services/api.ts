@@ -76,8 +76,19 @@ export interface Donation {
   user_id: number;
   amount: number;
   message?: string;
+  is_anonymous: boolean;
+  funding_preference: string;
+  rollover_consent: boolean;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  is_stats: number;
+  payment_method: 'momo' | 'vnpay' | 'bank_transfer' | 'credits';
+  transaction_id?: string;
+  bank_name?: string;
+  account_number?: string;
+  bank_id?: number;
   created_at: string;
   updated_at: string;
+  campaign: Campaign;
   donor?: {
     id: number;
     name: string;
@@ -793,4 +804,100 @@ export const api = {
       throw new Error(error.response?.data?.message || 'Failed to fetch completed campaigns');
     }
   },
+
+  async getUserDonations(params: {
+    page?: number;
+    status?: string;
+    payment_method?: string;
+  } = {}): Promise<{
+    data: Donation[];
+    meta: {
+      current_page: number;
+      last_page: number;
+      total: number;
+    };
+  }> {
+    try {
+      const response = await axiosInstance.get('/user/donations', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch user donations');
+    }
+  },
+};
+
+// Admin API functions
+export const adminApi = {
+  // Dashboard
+  getStats: () => axiosInstance.get('/admin/stats'),
+  getActivities: () => axiosInstance.get('/admin/activities'),
+  
+  // Users
+  getUsers: (params?: {
+    role?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+  }) => axiosInstance.get('/admin/users', { params }),
+  
+  approveUser: (id: number) => axiosInstance.post(`/admin/users/${id}/approve`),
+  suspendUser: (id: number) => axiosInstance.post(`/admin/users/${id}/suspend`),
+  updateUserRole: (id: number, roleId: number) => 
+    axiosInstance.put(`/admin/users/${id}/role`, { role_id: roleId }),
+  
+  // Campaigns
+  getCampaigns: (params?: {
+    status?: string;
+    category?: string;
+    search?: string;
+    page?: number;
+  }) => axiosInstance.get('/admin/campaigns', { params }),
+  
+  approveCampaign: (id: number) => axiosInstance.post(`/admin/campaigns/${id}/approve`),
+  rejectCampaign: (id: number, reason?: string) => 
+    axiosInstance.post(`/admin/campaigns/${id}/reject`, { reason }),
+  
+  // News
+  getNews: (params?: {
+    status?: string;
+    category?: string;
+    search?: string;
+    page?: number;
+  }) => axiosInstance.get('/admin/news', { params }),
+  
+  publishNews: (id: number) => axiosInstance.post(`/admin/news/${id}/publish`),
+  archiveNews: (id: number) => axiosInstance.post(`/admin/news/${id}/archive`),
+  deleteNews: (id: number) => axiosInstance.delete(`/admin/news/${id}`),
+  
+  // Donations
+  getDonations: (params?: {
+    status?: string;
+    search?: string;
+    page?: number;
+  }) => axiosInstance.get('/admin/donations', { params }),
+  
+  // Analytics
+  getAnalytics: (params?: {
+    start_date?: string;
+    end_date?: string;
+  }) => axiosInstance.get('/admin/analytics', { params }),
+};
+
+// Wallet API functions
+export const walletApi = {
+  getWallet: () => axiosInstance.get('/wallet'),
+  getTransactions: (params?: { per_page?: number; type?: string; start_date?: string; end_date?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    
+    return axiosInstance.get(`/wallet/transactions?${queryParams.toString()}`);
+  },
+  getStatistics: () => axiosInstance.get('/wallet/statistics'),
+  useCredits: (data: { campaign_id: number; amount: number; message?: string; is_anonymous?: boolean }) => 
+    axiosInstance.post('/wallet/use-credits', data),
+  transferCredits: (data: { recipient_email: string; amount: number; message?: string }) => 
+    axiosInstance.post('/wallet/transfer', data),
 };
