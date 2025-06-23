@@ -205,6 +205,14 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         Route::get('/health-check', [CampaignStatusController::class, 'healthCheck']);
     });
     
+    // Campaign Status Monitoring
+    Route::prefix('campaigns-status')->group(function () {
+        Route::get('/summary', [CampaignStatusController::class, 'getStatusSummary']);
+        Route::get('/attention', [CampaignStatusController::class, 'getCampaignsRequiringAttention']);
+        Route::post('/{campaign}/complete', [CampaignStatusController::class, 'markAsCompleted']);
+        Route::get('/health-check', [CampaignStatusController::class, 'healthCheck']);
+    });
+    
     // Analytics
     Route::get('/analytics/users', [AdminAnalyticsController::class, 'users']);
     Route::get('/analytics/campaigns', [AdminAnalyticsController::class, 'campaigns']);
