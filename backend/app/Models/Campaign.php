@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Campaign extends Model
@@ -33,6 +34,12 @@ class Campaign extends Model
         'organizer_id',
         'rejection_reason',
         'is_featured',
+        // Funding policies
+        'funding_type',
+        'minimum_goal',
+        'rollover_policy',
+        'auto_disburse',
+        'accepts_credits',
     ];
 
     protected $casts = [
@@ -40,7 +47,10 @@ class Campaign extends Model
         'end_date' => 'datetime',
         'target_amount' => 'decimal:2',
         'current_amount' => 'decimal:2',
+        'minimum_goal' => 'decimal:2',
         'is_featured' => 'boolean',
+        'auto_disburse' => 'boolean',
+        'accepts_credits' => 'boolean',
         'images' => 'json'
     ];
     
@@ -94,6 +104,16 @@ class Campaign extends Model
     public function updates(): HasMany
     {
         return $this->hasMany(CampaignUpdate::class);
+    }
+
+    public function closure(): HasOne
+    {
+        return $this->hasOne(CampaignClosure::class);
+    }
+
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(CampaignProgressReport::class);
     }
 
     public function getProgressPercentageAttribute(): float
@@ -180,5 +200,132 @@ class Campaign extends Model
             'draft' => 'gray',
             default => 'gray'
         };
+    }
+
+    /**
+     * Funding type constants
+     */
+    const FUNDING_FLEXIBLE = 'flexible';
+    const FUNDING_ALL_OR_NOTHING = 'all_or_nothing'; 
+    const FUNDING_THRESHOLD = 'threshold';
+
+    /**
+     * Check if campaign uses flexible funding
+     */
+    public function isFlexibleFunding(): bool
+    {
+        return $this->funding_type === self::FUNDING_FLEXIBLE;
+    }
+
+    /**
+     * Check if campaign should be auto-disbursed when expired
+     */
+    public function shouldAutoDisburse(): bool
+    {
+        return $this->auto_disburse && $this->isFlexibleFunding();
+    }
+
+    /**
+     * Check if campaign meets minimum funding requirement
+     */
+    public function meetsMinimumGoal(): bool
+    {
+        if (!$this->minimum_goal) return true;
+        return $this->current_amount >= $this->minimum_goal;
+    }
+
+    /**
+     * Get disbursement amount after platform fee
+     */
+    public function getDisbursementAmount(float $platformFeePercent = 3.0): float
+    {
+        $fee = $this->current_amount * ($platformFeePercent / 100);
+        return $this->current_amount - $fee;
+    }
+
+    /**
+     * Check if campaign is expired
+     */
+    public function isExpired(): bool
+    {
+        return $this->end_date <= now() && $this->status === 'active';
+    }
+
+    /**
+     * Process campaign closure when expired
+     */
+    public function processClosure(array $options = []): CampaignClosure
+    {
+        $closureType = $this->determineClosureType();
+        $disbursementAmount = 0;
+        $platformFee = 0;
+
+        if ($closureType === CampaignClosure::CLOSURE_COMPLETED || 
+            ($closureType === CampaignClosure::CLOSURE_PARTIAL_COMPLETED && $this->shouldAutoDisburse())) {
+            
+            $platformFeePercent = $options['platform_fee_percent'] ?? 3.0;
+            $platformFee = $this->current_amount * ($platformFeePercent / 100);
+            $disbursementAmount = $this->current_amount - $platformFee;
+        }
+
+        $closure = CampaignClosure::create([
+            'campaign_id' => $this->id,
+            'closure_type' => $closureType,
+            'final_amount' => $this->current_amount,
+            'disbursement_amount' => $disbursementAmount,
+            'platform_fee' => $platformFee,
+            'closure_reason' => $options['reason'] ?? null,
+            'disbursement_details' => $options['disbursement_details'] ?? null,
+            'disbursed_at' => $disbursementAmount > 0 ? now() : null
+        ]);
+
+        // Update campaign status
+        $this->update(['status' => 'completed']);
+
+        return $closure;
+    }
+
+    /**
+     * Determine closure type based on funding rules
+     */
+    private function determineClosureType(): string
+    {
+        if ($this->current_amount >= $this->target_amount) {
+            return CampaignClosure::CLOSURE_COMPLETED;
+        }
+
+        if ($this->funding_type === self::FUNDING_FLEXIBLE) {
+            return CampaignClosure::CLOSURE_PARTIAL_COMPLETED;
+        }
+
+        if ($this->funding_type === self::FUNDING_THRESHOLD && $this->meetsMinimumGoal()) {
+            return CampaignClosure::CLOSURE_PARTIAL_COMPLETED;
+        }
+
+        return CampaignClosure::CLOSURE_FAILED;
+    }
+
+    /**
+     * Check if campaign accepts credits donations
+     */
+    public function acceptsCredits(): bool
+    {
+        return $this->isActive() && $this->status === 'active';
+    }
+
+    /**
+     * Get donations made with credits
+     */
+    public function creditsDonations(): HasMany
+    {
+        return $this->hasMany(Donation::class)->where('payment_method', 'credits');
+    }
+
+    /**
+     * Get total amount donated via credits
+     */
+    public function getTotalCreditsAmount(): float
+    {
+        return $this->creditsDonations()->where('status', 'completed')->sum('amount');
     }
 }
