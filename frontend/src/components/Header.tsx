@@ -74,19 +74,19 @@ export default function Header() {
                   </div>
                 </div>
                 <div className="dropdown-divider"></div>
-                {user.role.slug === 'admin' && (
+                {user.role?.slug === 'admin' && (
                   <Link href="/admin" className="dropdown-item">
                     <i className="fas fa-cog"></i>
                     Quản trị hệ thống
                   </Link>
                 )}
-                {user.role.slug === 'staff' && (
+                {user.role?.slug === 'staff' && (
                   <Link href="/staff" className="dropdown-item">
                     <i className="fas fa-user-tie"></i>
                     Trang nhân viên
                   </Link>
                 )}
-                {user.role.slug === 'fundraiser' && (
+                {user.role?.slug === 'fundraiser' && (
                   <>
                     <Link href="/fundraiser/dashboard" className="dropdown-item">
                       <i className="fas fa-tachometer-alt"></i>
@@ -106,18 +106,14 @@ export default function Header() {
                   <i className="fas fa-user"></i>
                   Tài khoản của tôi
                 </Link>
-                {(user.role.slug === 'user' || user.role.slug === 'fundraiser') && (
-                  <>
-                    <Link href="/user/news" className="dropdown-item">
-                      <i className="fas fa-edit"></i>
-                      Bài viết của tôi
-                    </Link>
-                    <Link href="/user/activities" className="dropdown-item">
-                      <i className="fas fa-calendar-plus"></i>
-                      Hoạt động của tôi
-                    </Link>
-                  </>
-                )}
+                <Link href="/wallet" className="dropdown-item">
+                  <i className="fas fa-wallet"></i>
+                  Ví thiện nguyện KV Credits
+                </Link>
+                <Link href="/user/donations" className="dropdown-item">
+                  <i className="fas fa-heart"></i>
+                  Lịch sử đóng góp
+                </Link>
                 <div className="dropdown-divider"></div>
                 <button onClick={logout} className="dropdown-item logout-button">
                   <i className="fas fa-sign-out-alt"></i>

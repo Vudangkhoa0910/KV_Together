@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Function to set up auth state
   const setupAuthState = (userData: User, newToken: string) => {
-    console.log('Setting up auth state:', { userData: userData.name, tokenLength: newToken.length });
+    console.log('Setting up auth state:', { userData, tokenLength: newToken.length });
     
     // Store token and user data immediately, synchronously
     localStorage.setItem('token', newToken);
@@ -127,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(true);
     
     console.log('Auth state setup completed successfully');
+    console.log('User data stored in cookie:', JSON.stringify(userData));
     console.log('Token stored in localStorage:', localStorage.getItem('token') ? 'YES' : 'NO');
   };
 
