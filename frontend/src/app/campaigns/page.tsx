@@ -56,6 +56,7 @@ const CampaignsPage = () => {
           sort: sortBy,
           page: currentPage,
           search: searchQuery,
+          per_page: 9, // Hiển thị 9 chiến dịch mỗi trang
         };
         console.log('Loading campaigns with params:', params);
         const { data, meta } = await api.getCampaigns(params);
@@ -97,6 +98,12 @@ const CampaignsPage = () => {
               className="px-6 py-3 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 font-medium transition-all duration-200"
             >
               Đã hoàn thành
+            </Link>
+            <Link 
+              href="/campaigns/ended"
+              className="px-6 py-3 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 font-medium transition-all duration-200"
+            >
+              <span className="text-red-600">Đã kết thúc</span>
             </Link>
           </div>
         </div>

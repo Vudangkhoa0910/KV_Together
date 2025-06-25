@@ -43,7 +43,8 @@ export const MENU_ITEMS: MenuItems = {
         title: 'Tình trạng',
         items: [
           { label: 'Đang hoạt động', href: '/campaigns' },
-          { label: 'Đã hoàn thành', href: '/campaigns/completed' }
+          { label: 'Đã hoàn thành', href: '/campaigns/completed' },
+          { label: 'Đã kết thúc', href: '/campaigns/ended' }
         ]
       },
       {
@@ -102,6 +103,7 @@ export const MENU_ITEMS: MenuItems = {
         title: 'Tham gia',
         items: [
           { label: 'Hoạt động của tôi', href: '/user/activities', requireAuth: true },
+          { label: 'Hoạt động đã đăng ký', href: '/user/registrations', requireAuth: true },
           { label: 'Tạo hoạt động mới', href: '/activities/create', requireAuth: true, requireRole: 'fundraiser' }
         ]
       }

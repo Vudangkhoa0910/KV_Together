@@ -140,7 +140,7 @@ const DonationCertificate: React.FC<DonationCertificateProps> = ({
               priority
             />
             {/* Overlay content */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center animate-fadeIn" style={{ paddingTop: '32%', paddingBottom: '20%' }}>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center animate-fadeIn" style={{ paddingTop: '25%', paddingBottom: '20%' }}>
               {/* Tên người quyên góp - positioned to match the certificate design */}
               <div style={{ 
                 marginBottom: 'clamp(1%, 1.5%, 2%)',
@@ -206,8 +206,9 @@ const DonationCertificate: React.FC<DonationCertificateProps> = ({
 
               {/* Ngày quyên góp - positioned at the bottom of content area */}
               <div style={{ 
-                marginTop: 'auto',
-                animation: 'slideInFromBottom 1s ease-out 0.4s both'
+                  position: 'absolute',
+                  bottom: '2.5rem',
+                  animation: 'slideInFromBottom 1s ease-out 0.4s both'
               }}>
                 <p className="font-medium transition-all duration-300 hover:scale-105" style={{ 
                   color: '#4B5563',

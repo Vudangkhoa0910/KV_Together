@@ -88,6 +88,12 @@ const CompletedCampaignsPage = () => {
             >
               Đã hoàn thành
             </Link>
+            <Link 
+              href="/campaigns/ended"
+              className="px-6 py-3 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 font-medium transition-all duration-200"
+            >
+              <span className="text-red-600">Đã kết thúc</span>
+            </Link>
           </div>
         </div>
 

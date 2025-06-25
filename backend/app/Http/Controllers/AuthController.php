@@ -142,4 +142,41 @@ class AuthController extends Controller
             ],
         ], 201);
     }
+
+    public function refresh(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        // Revoke current tokens
+        $user->tokens()->delete();
+        
+        // Create new token
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar,
+                'role' => [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
+                    'slug' => $user->role->slug,
+                ],
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+            ],
+        ]);
+    }
 }

@@ -42,6 +42,7 @@ Route::get('/test', function() {
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
 Route::get('/auth/user', [AuthController::class, 'user'])->middleware('auth:sanctum');
 
 // Categories
@@ -63,6 +64,15 @@ Route::prefix('activities')->group(function () {
     Route::get('/{slug}', [ActivityController::class, 'show']);
 });
 
+// Activity Registration routes (need authentication)
+Route::middleware('auth:sanctum')->prefix('activity-registrations')->group(function () {
+    Route::get('/', [App\Http\Controllers\ActivityRegistrationController::class, 'index']);
+    Route::post('/activities/{activity}', [App\Http\Controllers\ActivityRegistrationController::class, 'store']);
+    Route::get('/{registration}', [App\Http\Controllers\ActivityRegistrationController::class, 'show']);
+    Route::patch('/{registration}/cancel', [App\Http\Controllers\ActivityRegistrationController::class, 'cancel']);
+    Route::get('/activities/{activity}/check', [App\Http\Controllers\ActivityRegistrationController::class, 'checkRegistration']);
+});
+
 // Authenticated news routes
 Route::middleware('auth:sanctum')->prefix('news')->group(function () {
     Route::post('/', [NewsController::class, 'store']);
@@ -81,8 +91,11 @@ Route::prefix('campaigns')->group(function () {
     Route::get('/', [CampaignController::class, 'index']);
     Route::get('/featured', [CampaignController::class, 'featured']);
     Route::get('/completed', [CampaignController::class, 'getCompleted']);
+    Route::get('/ended', [CampaignController::class, 'getEnded']);
     Route::get('/recent-successful', [CampaignController::class, 'getRecentSuccessful']);
     Route::get('/urgent', [CampaignController::class, 'getUrgent']);
+    Route::get('/system-status', [CampaignController::class, 'getSystemStatus']);
+    Route::get('/{campaign}/status', [CampaignController::class, 'getStatus']);
     Route::get('/{slug}', [CampaignController::class, 'show']);
 });
 
@@ -162,6 +175,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     
     // Campaigns
     Route::get('/campaigns', [AdminController::class, 'getCampaigns']);
+    Route::get('/campaigns/by-status', [CampaignController::class, 'getCampaignsByStatus']);
     Route::post('/campaigns/{id}/approve', [AdminController::class, 'approveCampaign']);
     Route::post('/campaigns/{id}/reject', [AdminController::class, 'rejectCampaign']);
     
@@ -229,4 +243,14 @@ Route::middleware('auth:sanctum')->prefix('wallet')->group(function () {
     Route::get('/statistics', [App\Http\Controllers\Api\VirtualWalletController::class, 'getStatistics']);
     Route::post('/use-credits', [App\Http\Controllers\Api\VirtualWalletController::class, 'useCredits']);
     Route::post('/transfer', [App\Http\Controllers\Api\VirtualWalletController::class, 'transferCredits']);
+});
+
+// Admin/Fundraiser activity registration management
+Route::prefix('admin/activity-registrations')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'index']);
+    Route::get('/stats', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'getStats']);
+    Route::get('/{registration}', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'show']);
+    Route::patch('/{registration}/confirm', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'confirm']);
+    Route::patch('/{registration}/cancel', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'cancel']);
+    Route::post('/bulk-confirm', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'bulkConfirm']);
 });

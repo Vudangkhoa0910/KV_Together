@@ -7,6 +7,8 @@ import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 import axiosInstance from '@/lib/axios';
 
+import { TokenManager } from '@/lib/tokenManager';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export interface User {
@@ -28,6 +30,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   registerUser: (data: any) => Promise<any>;
+  refreshToken: () => Promise<string>;
   clearError: () => void;
 }
 
@@ -40,6 +43,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Function to refresh token
+  const refreshToken = async () => {
+    try {
+      console.log('Attempting to refresh token...');
+      const currentToken = localStorage.getItem('token');
+      
+      if (!currentToken) {
+        throw new Error('No token to refresh');
+      }
+
+      const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        const newToken = response.data.token;
+        const userData = response.data.user;
+        
+        console.log('Token refreshed successfully');
+        setupAuthState(userData, newToken);
+        
+        return newToken;
+      } else {
+        throw new Error('Failed to refresh token');
+      }
+    } catch (error: any) {
+      console.error('Token refresh failed:', error);
+      clearAuthState();
+      router.push('/auth/login');
+      throw error;
+    }
+  };
 
   // Function to validate token expiration
   const isTokenExpired = (token: string) => {
@@ -93,9 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setToken(null);
     
-    // Clear storage
+    // Clear storage with TokenManager
     try {
-      localStorage.removeItem('token');
+      TokenManager.clearToken();
       sessionStorage.removeItem('token'); // Also clear sessionStorage
       Cookies.remove('user');
       // Clear token from axios instance
@@ -110,8 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setupAuthState = (userData: User, newToken: string) => {
     console.log('Setting up auth state:', { userData, tokenLength: newToken.length });
     
-    // Store token and user data immediately, synchronously
-    localStorage.setItem('token', newToken);
+    // Store token with timestamp using TokenManager
+    TokenManager.setToken(newToken);
     Cookies.set('user', JSON.stringify(userData), { 
       expires: 7, // 7 days
       secure: false, // Set to true in production with HTTPS
@@ -128,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     console.log('Auth state setup completed successfully');
     console.log('User data stored in cookie:', JSON.stringify(userData));
-    console.log('Token stored in localStorage:', localStorage.getItem('token') ? 'YES' : 'NO');
+    console.log('Token stored with timestamp:', TokenManager.getTokenInfo());
   };
 
   // Function to handle API errors
@@ -184,24 +224,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const storedToken = localStorage.getItem('token');
+        // Use TokenManager to check and refresh token if needed
+        const currentToken = await TokenManager.refreshTokenIfNeeded();
         const storedUser = Cookies.get('user');
 
         console.log('Initializing auth...', { 
-          hasToken: !!storedToken, 
+          hasToken: !!currentToken, 
           hasUser: !!storedUser,
-          tokenLength: storedToken?.length || 0,
-          tokenPreview: storedToken?.substring(0, 20) + '...'
+          tokenLength: currentToken?.length || 0,
+          tokenPreview: currentToken?.substring(0, 20) + '...'
         });
 
-        if (!storedToken || storedToken === 'null' || storedToken === 'undefined') {
+        if (!currentToken || currentToken === 'null' || currentToken === 'undefined') {
           console.log('No valid token found, clearing auth state');
           clearAuthState();
           return;
         }
 
         console.log('Token found, checking expiration...');
-        if (isTokenExpired(storedToken)) {
+        if (isTokenExpired(currentToken)) {
           console.log('Token expired, clearing auth state');
           clearAuthState();
           return;
@@ -209,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log('Token is valid, setting up axios and fetching user data...');
         // Set up axios defaults
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
 
         // Try to use stored user data first if available
         if (storedUser) {
@@ -217,7 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userData = JSON.parse(storedUser);
             console.log('Using stored user data:', userData);
             setUser(userData);
-            setToken(storedToken);
+            setToken(currentToken);
             setIsAuthenticated(true);
           } catch (parseError) {
             console.error('Failed to parse stored user data:', parseError);
@@ -233,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // Update with fresh data
           setUser(userData);
-          setToken(storedToken);
+          setToken(currentToken);
           setIsAuthenticated(true);
           
           // Update stored user data if different
@@ -264,7 +305,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initAuth();
+
+    // Set up axios interceptor for automatic token refresh
+    const interceptor = axiosInstance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        if (error.response?.status === 401 && !originalRequest._retry && token) {
+          originalRequest._retry = true;
+          
+          try {
+            console.log('401 error detected, attempting token refresh...');
+            const newToken = await refreshToken();
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+            return axiosInstance(originalRequest);
+          } catch (refreshError) {
+            console.error('Token refresh failed, redirecting to login');
+            return Promise.reject(error);
+          }
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptor on unmount
+    return () => {
+      axiosInstance.interceptors.response.eject(interceptor);
+    };
   }, []);
+
+  // Auto refresh token periodically (every 55 minutes if token is valid)
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    const autoRefreshInterval = setInterval(async () => {
+      try {
+        console.log('Auto-refreshing token...');
+        await refreshToken();
+      } catch (error) {
+        console.error('Auto refresh failed:', error);
+        clearInterval(autoRefreshInterval);
+      }
+    }, 55 * 60 * 1000); // 55 minutes
+
+    return () => clearInterval(autoRefreshInterval);
+  }, [isAuthenticated, token]);
 
   // Monitor token changes and ensure persistence
   useEffect(() => {
@@ -369,6 +456,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     registerUser,
+    refreshToken,
     clearError
   };
 

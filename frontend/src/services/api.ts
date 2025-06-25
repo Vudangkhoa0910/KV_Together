@@ -24,7 +24,7 @@ export interface Campaign {
   images: string[];
   image_url: string | null;
   images_url: string[];
-  status: 'draft' | 'pending' | 'active' | 'rejected' | 'completed' | 'cancelled';
+  status: 'draft' | 'pending' | 'active' | 'rejected' | 'completed' | 'cancelled' | 'ended_partial' | 'ended_failed';
   rejection_reason?: string;
   is_featured: boolean;
   organizer: {
@@ -265,6 +265,7 @@ export const api = {
     sort?: string;
     search?: string;
     page?: number;
+    per_page?: number;
   } = {}): Promise<{
     data: Campaign[];
     meta: {

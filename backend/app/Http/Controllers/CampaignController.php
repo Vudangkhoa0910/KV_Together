@@ -16,7 +16,7 @@ class CampaignController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->except(['index', 'show', 'featured', 'getCompleted', 'getRecentSuccessful', 'getUrgent']);
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'featured', 'getCompleted', 'getEnded', 'getRecentSuccessful', 'getUrgent', 'getStatus', 'getSystemStatus']);
     }
 
     public function index()
@@ -574,15 +574,9 @@ class CampaignController extends Controller
     public function getCompleted(Request $request)
     {
         try {
-            // Lấy chiến dịch hoàn thành theo 3 điều kiện:
-            // 1. status = 'completed' (đã được đánh dấu hoàn thành thủ công)
-            // 2. current_amount >= target_amount (đã đạt đủ số tiền), HOẶC
-            // 3. end_date <= now() (đã hết thời gian)
-            $query = Campaign::where(function($q) {
-                $q->where('status', 'completed')
-                  ->orWhereRaw('current_amount >= target_amount')
-                  ->orWhere('end_date', '<=', now());
-            })
+            // Lấy CHÍNH XÁC chiến dịch hoàn thành:
+            // Chỉ những chiến dịch có status = 'completed' (đã được backend xử lý và đánh dấu hoàn thành)
+            $query = Campaign::where('status', 'completed')
                 ->with(['categories', 'organizer'])
                 ->withCount('donations')
                 ->withSum('realDonations', 'amount');
@@ -631,12 +625,8 @@ class CampaignController extends Controller
                 $campaign->was_stopped_before_target = $campaign->wasStoppedBeforeTarget();
             }
 
-            // Calculate total raised amount from all completed campaigns (including expired ones)
-            $totalRaised = Campaign::where(function($q) {
-                $q->where('status', 'completed')
-                  ->orWhereRaw('current_amount >= target_amount')
-                  ->orWhere('end_date', '<=', now());
-            })->sum('current_amount');
+            // Calculate total raised amount from ONLY completed campaigns
+            $totalRaised = Campaign::where('status', 'completed')->sum('current_amount');
 
             return response()->json([
                 'data' => $campaignsData,
@@ -650,6 +640,319 @@ class CampaignController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching completed campaigns:', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Có lỗi xảy ra khi tải danh sách chiến dịch đã hoàn thành'], 500);
+        }
+    }
+
+    /**
+     * Get detailed status for a campaign
+     */
+    public function getStatus(Campaign $campaign)
+    {
+        try {
+            $detailedStatus = $campaign->getDetailedStatus();
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'campaign_id' => $campaign->id,
+                    'basic_status' => $campaign->status,
+                    'detailed_status' => $detailedStatus,
+                    'progress' => [
+                        'percentage' => $campaign->progress_percentage,
+                        'current_amount' => $campaign->current_amount,
+                        'target_amount' => $campaign->target_amount,
+                        'remaining_amount' => max(0, $campaign->target_amount - $campaign->current_amount)
+                    ],
+                    'time' => [
+                        'end_date' => $campaign->end_date,
+                        'days_remaining' => $campaign->days_remaining,
+                        'is_expired' => $campaign->isExpired()
+                    ],
+                    'funding_info' => [
+                        'funding_type' => $campaign->funding_type ?? 'all_or_nothing',
+                        'minimum_goal' => $campaign->minimum_goal,
+                        'auto_disburse' => $campaign->auto_disburse,
+                        'accepts_credits' => $campaign->accepts_credits
+                    ],
+                    'closure' => $campaign->closure ? [
+                        'type' => $campaign->closure->closure_type,
+                        'status_text' => $campaign->closure->getClosureStatusText(),
+                        'final_amount' => $campaign->closure->final_amount,
+                        'disbursement_amount' => $campaign->closure->disbursement_amount,
+                        'platform_fee' => $campaign->closure->platform_fee,
+                        'requires_refund' => $campaign->closure->requiresRefund(),
+                        'closed_at' => $campaign->closure->created_at
+                    ] : null
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting campaign status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể lấy trạng thái chiến dịch'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get campaigns by status for admin
+     */
+    public function getCampaignsByStatus(Request $request)
+    {
+        try {
+            $status = $request->get('status', 'all');
+            $perPage = $request->get('per_page', 15);
+            
+            $query = Campaign::with(['categories', 'organizer', 'closure'])
+                ->withCount('donations');
+
+            switch ($status) {
+                case 'active':
+                    // Chiến dịch đang hoạt động (chưa hết hạn và chưa đủ target)
+                    $query->where('status', 'active')
+                          ->where('end_date', '>', now())
+                          ->whereColumn('current_amount', '<', 'target_amount');
+                    break;
+
+                case 'completed':
+                    // Chiến dịch đã hoàn thành (đủ target)
+                    $query->whereColumn('current_amount', '>=', 'target_amount');
+                    break;
+
+                case 'ended_failed':
+                    // Chiến dịch đã kết thúc thất bại (hết hạn, chưa đủ target, all-or-nothing)
+                    $query->whereHas('closure', function($q) {
+                        $q->where('closure_type', 'failed');
+                    });
+                    break;
+
+                case 'ended_partial':
+                    // Chiến dịch kết thúc một phần (hết hạn, chưa đủ target, flexible funding)
+                    $query->whereHas('closure', function($q) {
+                        $q->where('closure_type', 'partial');
+                    });
+                    break;
+
+                case 'expired_unprocessed':
+                    // Chiến dịch hết hạn nhưng chưa được xử lý
+                    $query->where('status', 'active')
+                          ->where('end_date', '<=', now())
+                          ->whereDoesntHave('closure');
+                    break;
+
+                case 'requires_refund':
+                    // Chiến dịch cần hoàn tiền
+                    $query->whereHas('closure', function($q) {
+                        $q->where('closure_type', 'failed');
+                    });
+                    break;
+
+                case 'pending':
+                    $query->where('status', 'pending');
+                    break;
+
+                case 'rejected':
+                    $query->where('status', 'rejected');
+                    break;
+
+                default:
+                    // All campaigns
+                    break;
+            }
+
+            $campaigns = $query->orderBy('created_at', 'desc')
+                              ->paginate($perPage);
+
+            // Add detailed status to each campaign
+            $campaigns->getCollection()->transform(function ($campaign) {
+                $campaign->detailed_status = $campaign->getDetailedStatus();
+                return $campaign;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $campaigns,
+                'summary' => [
+                    'total' => Campaign::count(),
+                    'active' => Campaign::where('status', 'active')
+                        ->where('end_date', '>', now())
+                        ->whereColumn('current_amount', '<', 'target_amount')
+                        ->count(),
+                    'completed' => Campaign::whereColumn('current_amount', '>=', 'target_amount')->count(),
+                    'ended_failed' => Campaign::whereHas('closure', function($q) {
+                        $q->where('closure_type', 'failed');
+                    })->count(),
+                    'ended_partial' => Campaign::whereHas('closure', function($q) {
+                        $q->where('closure_type', 'partial');
+                    })->count(),
+                    'expired_unprocessed' => Campaign::where('status', 'active')
+                        ->where('end_date', '<=', now())
+                        ->whereDoesntHave('closure')
+                        ->count(),
+                    'pending' => Campaign::where('status', 'pending')->count(),
+                    'rejected' => Campaign::where('status', 'rejected')->count(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting campaigns by status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể lấy danh sách chiến dịch'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get system status overview for monitoring
+     */
+    public function getSystemStatus()
+    {
+        try {
+            $overview = [
+                'campaigns' => [
+                    'total' => Campaign::count(),
+                    'active' => Campaign::where('status', 'active')
+                        ->where('end_date', '>', now())
+                        ->whereColumn('current_amount', '<', 'target_amount')
+                        ->count(),
+                    // CHÍNH XÁC: Chỉ đếm những chiến dịch có status = 'completed'
+                    'completed' => Campaign::where('status', 'completed')->count(),
+                    // CHÍNH XÁC: Đếm những chiến dịch có status là ended_failed hoặc ended_partial
+                    'ended_failed' => Campaign::whereIn('status', ['ended_failed', 'ended_partial'])->count(),
+                    'expired_unprocessed' => Campaign::where('status', 'active')
+                        ->where('end_date', '<=', now())
+                        ->whereDoesntHave('closure')
+                        ->count(),
+                    'pending_approval' => Campaign::where('status', 'pending')->count(),
+                ],
+                'finance' => [
+                    'total_raised' => Campaign::sum('current_amount'),
+                    'total_target' => Campaign::sum('target_amount'),
+                    'funds_to_refund' => Campaign::whereIn('status', ['ended_failed'])
+                        ->sum('current_amount'),
+                ],
+                'alerts' => [
+                    'expired_unprocessed' => Campaign::where('status', 'active')
+                        ->where('end_date', '<=', now())
+                        ->whereDoesntHave('closure')
+                        ->count(),
+                    'need_refund' => Campaign::where('status', 'ended_failed')->count(),
+                    'low_performance' => Campaign::where('status', 'active')
+                        ->where('end_date', '>', now())
+                        ->whereRaw('(current_amount / target_amount) < 0.1')
+                        ->where('created_at', '<', now()->subDays(30))
+                        ->count(),
+                ],
+                'last_updated' => now()->toISOString(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $overview
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting system status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể lấy trạng thái hệ thống'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get ended campaigns (expired but not necessarily completed)
+     */
+    public function getEnded(Request $request)
+    {
+        try {
+            // Lấy CHÍNH XÁC chiến dịch đã kết thúc:
+            // Hết thời gian NHƯNG KHÔNG PHẢI status 'completed' (tức là chưa đạt target hoặc đạt một phần)
+            $query = Campaign::where('end_date', '<=', now())
+                ->whereIn('status', ['ended_failed', 'ended_partial']) // Chỉ lấy những chiến dịch thực sự kết thúc
+                ->with(['categories', 'organizer', 'closure'])
+                ->withCount('donations')
+                ->withSum('realDonations', 'amount');
+
+            // Filter by category if provided
+            if ($request->category && $request->category !== 'all') {
+                $categorySlug = $request->category;
+                $query->whereHas('categories', function($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            }
+
+            // Search functionality
+            if ($request->search) {
+                $query->search($request->search);
+            }
+
+            // Filter by closure type
+            if ($request->closure_type && $request->closure_type !== 'all') {
+                $query->whereHas('closure', function($q) use ($request) {
+                    $q->where('closure_type', $request->closure_type);
+                });
+            }
+
+            // Sắp xếp
+            switch($request->get('sort', 'newest')) {
+                case 'oldest':
+                    $query->oldest();
+                    break;
+                case 'amount':
+                    $query->orderByDesc('current_amount');
+                    break;
+                case 'target':
+                    $query->orderByDesc('target_amount');
+                    break;
+                case 'progress':
+                    $query->orderByRaw('(current_amount / target_amount) DESC');
+                    break;
+                case 'newest':
+                default:
+                    $query->latest();
+                    break;
+            }
+
+            $campaigns = $query->paginate($request->get('per_page', 9));
+           
+            // Add image URLs and status information
+            $campaignsData = $campaigns->items();
+            foreach ($campaignsData as $campaign) {
+                $campaign->image_url = $campaign->getImageUrlAttribute();
+                $campaign->images_url = $campaign->getImagesUrlAttribute();
+                
+                // Add detailed status and status color for frontend
+                $campaign->detailed_status = $campaign->getDetailedStatus();
+                $campaign->display_status = $campaign->getDisplayStatus();
+                $campaign->status_color = $campaign->getStatusColor();
+                $campaign->was_stopped_before_target = $campaign->wasStoppedBeforeTarget();
+                
+                // Add closure information
+                if ($campaign->closure) {
+                    $campaign->closure_info = [
+                        'type' => $campaign->closure->closure_type,
+                        'status_text' => $campaign->closure->getClosureStatusText(),
+                        'requires_refund' => $campaign->closure->requiresRefund(),
+                        'closed_at' => $campaign->closure->created_at,
+                        'final_amount' => $campaign->closure->final_amount,
+                        'disbursement_amount' => $campaign->closure->disbursement_amount,
+                    ];
+                }
+            }
+
+            return response()->json([
+                'data' => $campaignsData,
+                'meta' => [
+                    'current_page' => $campaigns->currentPage(),
+                    'last_page' => $campaigns->lastPage(),
+                    'total' => $campaigns->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching ended campaigns:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Có lỗi xảy ra khi tải danh sách chiến dịch đã kết thúc'], 500);
         }
     }
 }
