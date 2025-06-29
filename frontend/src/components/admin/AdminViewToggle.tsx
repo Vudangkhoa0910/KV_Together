@@ -16,13 +16,11 @@ export default function AdminViewToggle() {
 
   const handleToggle = () => {
     if (isViewAsUser) {
-      // Going back to admin view
+      // Going back to admin view - just toggle, don't redirect
       toggleViewAsUser();
-      router.push('/admin');
     } else {
-      // Going to user view
+      // Going to user view - toggle but stay on current page to preview as user
       toggleViewAsUser();
-      router.push('/');
     }
   };
 

@@ -5,12 +5,48 @@ export async function middleware(request: NextRequest) {
     const user = request.cookies.get('user');
     const path = request.nextUrl.pathname;
     
+    // Handle root path redirect for logged-in users
+    if (path === '/') {
+        if (user) {
+            try {
+                const userData = JSON.parse(user.value);
+                const userRole = userData.role?.slug || userData.user?.role?.slug;
+                
+                // Redirect admin users to super-admin dashboard when they visit root
+                if (userRole === 'admin') {
+                    return NextResponse.redirect(new URL('/super-admin', request.url));
+                }
+            } catch (error) {
+                console.error('Error parsing user data for root redirect:', error);
+            }
+        }
+        return NextResponse.next();
+    }
+    
     // Handle auth-related routes
     if (path.startsWith('/auth/')) {
         // For login and register pages
         if (path === '/auth/login' || path === '/auth/register') {
             if (user) {
-                return NextResponse.redirect(new URL('/', request.url));
+                try {
+                    const userData = JSON.parse(user.value);
+                    const userRole = userData.role?.slug || userData.user?.role?.slug;
+                    
+                    // Redirect based on user role
+                    if (userRole === 'admin') {
+                        return NextResponse.redirect(new URL('/super-admin', request.url));
+                    } else if (userRole === 'fundraiser') {
+                        return NextResponse.redirect(new URL('/fundraiser/dashboard', request.url));
+                    } else {
+                        return NextResponse.redirect(new URL('/', request.url));
+                    }
+                } catch (error) {
+                    console.error('Error parsing user data in auth middleware:', error);
+                    // If we can't parse user data, clear the cookie and allow access
+                    const response = NextResponse.next();
+                    response.cookies.delete('user');
+                    return response;
+                }
             }
             return NextResponse.next();
         }
@@ -19,8 +55,32 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
+    // Super Admin routes
+    if (path.startsWith('/super-admin')) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/auth/login', request.url));
+        }
+
+        try {
+            const userData = JSON.parse(user.value);
+            const userRole = userData.role?.slug || userData.user?.role?.slug;
+
+            if (userRole !== 'admin') {
+                return NextResponse.redirect(new URL('/unauthorized', request.url));
+            }
+        } catch (error) {
+            console.error('Error parsing user data for super admin routes:', error);
+            return NextResponse.redirect(new URL('/auth/login', request.url));
+        }
+    }
+
+    // Redirect legacy admin routes to super-admin
+    if (path.startsWith('/admin')) {
+        return NextResponse.redirect(new URL('/super-admin', request.url));
+    }
+
     // Protected routes
-    if (path.startsWith('/admin') || path.startsWith('/staff') || path.startsWith('/user')) {
+    if (path.startsWith('/staff') || path.startsWith('/user')) {
         if (!user) {
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }
@@ -36,9 +96,6 @@ export async function middleware(request: NextRequest) {
             }
 
             // Check role-based access
-            if (path.startsWith('/admin') && userRole !== 'admin') {
-                return NextResponse.redirect(new URL('/', request.url));
-            }
             if (path.startsWith('/staff') && userRole !== 'staff') {
                 return NextResponse.redirect(new URL('/', request.url));
             }
@@ -78,10 +135,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
+        '/',
         '/auth/login',
         '/auth/register', 
         '/auth/:path*',
         '/admin/:path*',
+        '/super-admin/:path*',
         '/staff/:path*',
         '/user/:path*',
         '/fundraiser/:path*',

@@ -39,9 +39,10 @@ export default function Login() {
       
       // Redirect based on user role
       if (response.user.role?.slug === 'admin') {
+        // Always redirect admin to admin dashboard
         router.push('/admin');
       } else if (response.user.role?.slug === 'fundraiser') {
-        router.push('/fundraiser');
+        router.push('/fundraiser/dashboard');
       } else {
         // Default to home page if safeRedirect is /auth/login (avoiding loops)
         const finalRedirect = safeRedirect.includes('/auth/login') ? '/' : safeRedirect;

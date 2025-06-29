@@ -70,28 +70,12 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             {user.role === 'admin' && (
               <>
                 <Link
-                  href="/admin/dashboard"
+                  href="/super-admin"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsOpen(false)}
                 >
                   <i className="fas fa-tachometer-alt w-5 text-gray-400"></i>
-                  <span>Dashboard</span>
-                </Link>
-                <Link
-                  href="/admin/users"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <i className="fas fa-users-cog w-5 text-gray-400"></i>
-                  <span>Quản lý người dùng</span>
-                </Link>
-                <Link
-                  href="/admin/activities"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <i className="fas fa-tasks w-5 text-gray-400"></i>
-                  <span>Quản lý hoạt động</span>
+                  <span>Super Admin Dashboard</span>
                 </Link>
                 <div className="border-t border-gray-100"></div>
               </>

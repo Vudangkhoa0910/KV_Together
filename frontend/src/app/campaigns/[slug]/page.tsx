@@ -865,8 +865,29 @@ const CampaignDetails = () => {
                 console.log('Payment confirmed, showing certificate');
                 setShowVietQR(false);
                 setShowCertificate(true);
-                // Show success toast
-                toast.success('Quyên góp thành công! Cảm ơn bạn đã đóng góp');
+                // Show success toast with enhanced styling
+                toast.success('Quyên góp thành công! 🎉', {
+                  duration: 5000,
+                  style: {
+                    borderLeft: '4px solid #10b981',
+                    padding: '16px',
+                    fontSize: '16px',
+                  },
+                  icon: '❤️',
+                });
+                
+                // Show follow-up message
+                setTimeout(() => {
+                  toast('Cảm ơn bạn đã đóng góp vào chiến dịch này! Sự hỗ trợ của bạn có ý nghĩa rất lớn.', {
+                    duration: 6000,
+                    style: {
+                      borderLeft: '4px solid #f97316',
+                      backgroundColor: '#fff7ed',
+                      padding: '16px',
+                    },
+                    icon: '🙏',
+                  });
+                }, 1500);
                 
                 // Refresh campaign data
                 if (slug) {

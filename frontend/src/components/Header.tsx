@@ -75,7 +75,7 @@ export default function Header() {
                 </div>
                 <div className="dropdown-divider"></div>
                 {user.role?.slug === 'admin' && (
-                  <Link href="/admin" className="dropdown-item">
+                  <Link href="/super-admin" className="dropdown-item">
                     <i className="fas fa-cog"></i>
                     Quản trị hệ thống
                   </Link>

@@ -8,6 +8,7 @@ import {
   ExclamationTriangleIcon 
 } from '@heroicons/react/24/outline';
 import { walletApi } from '@/services/api';
+import toast from 'react-hot-toast';
 
 interface CreditsDonationProps {
   campaign: {
@@ -62,12 +63,12 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
 
     const amount = parseFloat(donationAmount);
     if (amount <= 0) {
-      alert('Số tiền ủng hộ phải lớn hơn 0');
+      toast.error('Số tiền ủng hộ phải lớn hơn 0');
       return;
     }
 
     if (amount > walletData.balance) {
-      alert('Số dư Credits không đủ');
+      toast.error('Số dư Credits không đủ');
       return;
     }
 
@@ -81,7 +82,31 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
       });
 
       if (response.data.success) {
-        alert(response.data.message || 'Cảm ơn bạn đã ủng hộ chiến dịch bằng KV Credits thiện nguyện!');
+        toast.success(
+          'Ủng hộ thành công!', 
+          {
+            duration: 4000,
+            style: {
+              borderLeft: '4px solid #10b981',
+            },
+            icon: '🎉',
+          }
+        );
+        // Show additional success message after a delay
+        setTimeout(() => {
+          toast(
+            response.data.message || 'Cảm ơn bạn đã ủng hộ chiến dịch bằng KV Credits thiện nguyện!',
+            {
+              duration: 6000,
+              style: {
+                borderLeft: '4px solid #f97316',
+                backgroundColor: '#fff7ed',
+              },
+              icon: '❤️',
+            }
+          );
+        }, 1000);
+        
         setShowDonationForm(false);
         setDonationAmount('');
         setMessage('');
@@ -90,7 +115,15 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
         onSuccess?.();
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra khi ủng hộ');
+      toast.error(
+        err.response?.data?.message || 'Có lỗi xảy ra khi ủng hộ',
+        {
+          duration: 5000,
+          style: {
+            borderLeft: '4px solid #ef4444',
+          },
+        }
+      );
     } finally {
       setIsDonating(false);
     }

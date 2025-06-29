@@ -73,19 +73,11 @@ export default function FundraiserReportsPage() {
     setIsLoading(true);
     try {
       // Fetch report data from API
-      const response = await fetch('/api/fundraiser/reports', {
-        credentials: 'include',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/reports`, {
         headers: {
-          'Accept': 'application/json'
-        },
-        method: 'GET',
-        // Send filters as query parameters
-        body: JSON.stringify({
-          type: reportType,
-          range: dateRange,
-          campaign: campaignFilter,
-          status: statusFilter
-        })
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
       });
       
       if (!response.ok) {
@@ -94,10 +86,27 @@ export default function FundraiserReportsPage() {
       
       const data = await response.json();
       
-      if (data && data.donations) {
-        setDonations(data.donations);
-        setTotals(data.totals);
-        setMonthlySummary(data.monthlySummary);
+      if (data) {
+        // Map backend data to frontend format
+        setTotals({
+          totalRaised: data.summary?.total_raised || 0,
+          totalDonations: data.summary?.total_campaigns || 0,
+          averageDonation: data.summary?.total_raised / Math.max(data.summary?.total_donors || 1, 1),
+          totalDonors: data.summary?.total_donors || 0,
+          successRate: 100
+        });
+        
+        // Map monthly report
+        if (data.monthly_report) {
+          setMonthlySummary(data.monthly_report.map((item: any) => ({
+            month: item.month,
+            amount: item.total_raised || 0,
+            count: item.total_donors || 0
+          })));
+        }
+        
+        // Set empty donations for now
+        setDonations([]);
         setIsLoading(false);
         return;
       }
@@ -167,7 +176,7 @@ export default function FundraiserReportsPage() {
     setTotals({
       totalRaised,
       totalDonations: donations.length,
-      averageDonation: donations.length ? Math.round(totalRaised / completed.length) : 0,
+      averageDonation: completed.length > 0 ? Math.round(totalRaised / completed.length) : 0,
       totalDonors: uniqueDonors,
       successRate
     });
@@ -238,11 +247,13 @@ export default function FundraiserReportsPage() {
   };
 
   const formatCurrency = (amount: number) => {
+    // Handle NaN, Infinity, and null/undefined values
+    const safeAmount = isNaN(amount) || !isFinite(amount) || amount == null ? 0 : amount;
     return new Intl.NumberFormat('vi-VN', { 
       style: 'currency', 
       currency: 'VND',
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(safeAmount);
   };
 
   const getChartOptions = (title: string) => {

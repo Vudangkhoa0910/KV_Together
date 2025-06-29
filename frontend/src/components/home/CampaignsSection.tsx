@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Campaign } from '@/services/api';
 import { formatCurrency, formatTimeLeft } from '@/utils/format';
 import ProgressBar from '@/components/ProgressBar';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface CampaignsSectionProps {
   campaigns: Campaign[];
@@ -17,9 +19,23 @@ const CampaignsSection: React.FC<CampaignsSectionProps> = ({
   subtitle,
   type 
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   if (!campaigns || campaigns.length === 0) {
     return null;
   }
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+    }
+  };
 
   const getBadgeStyle = (campaign: Campaign, type: string) => {
     if (type === 'urgent') {
@@ -75,27 +91,54 @@ const CampaignsSection: React.FC<CampaignsSectionProps> = ({
           )}
         </div>
 
-        <div className={`grid gap-6 ${
-          campaigns.length <= 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
-          'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-        }`}>
-          {campaigns.map((campaign, index) => (
-            <div 
-              key={campaign.id}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group"
+        {/* Navigation buttons and scroll container */}
+        <div className="relative">
+          {/* Left navigation button */}
+          {campaigns.length > 3 && (
+            <button
+              onClick={scrollLeft}
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 opacity-80 hover:opacity-100"
+              aria-label="Scroll left"
             >
-              {/* Image */}
-              <div className="relative h-48 overflow-hidden">
-                <Image
-                  src={campaign.image_url || "/images/bg.jpeg"}
-                  alt={campaign.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-                
-                {/* Badge */}
-                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold ${getBadgeStyle(campaign, type)}`}>
-                  {getBadgeText(campaign, type)}
+              <ChevronLeftIcon className="h-6 w-6 text-gray-600" />
+            </button>
+          )}
+
+          {/* Right navigation button */}
+          {campaigns.length > 3 && (
+            <button
+              onClick={scrollRight}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 opacity-80 hover:opacity-100"
+              aria-label="Scroll right"
+            >
+              <ChevronRightIcon className="h-6 w-6 text-gray-600" />
+            </button>
+          )}
+
+          {/* Horizontal scroll container */}
+          <div 
+            ref={scrollRef}
+            className="overflow-x-auto pb-4 scrollbar-hide"
+          >
+            <div className="flex gap-6 w-max px-4 md:px-0">
+              {campaigns.map((campaign, index) => (
+                <Link 
+                  key={campaign.id}
+                  href={`/campaigns/${campaign.slug}`}
+                  className="block bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group flex-shrink-0 w-80 sm:w-72 md:w-80"
+                >
+                {/* Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <Image
+                    src={campaign.image_url || "/images/bg.jpeg"}
+                    alt={campaign.title}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  
+                  {/* Badge */}
+                  <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold ${getBadgeStyle(campaign, type)}`}>
+                    {getBadgeText(campaign, type)}
                 </div>
 
                 {/* Progress overlay for urgent campaigns */}
@@ -200,29 +243,34 @@ const CampaignsSection: React.FC<CampaignsSectionProps> = ({
                 )}
 
                 {/* Action Button */}
-                <button className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:scale-105 ${
+                <div className={`w-full py-3 px-4 rounded-lg font-semibold text-white text-center transition-all duration-300 hover:scale-105 ${
                   type === 'urgent' ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' :
                   type === 'successful' ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' :
                   'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
                 }`}>
                   {type === 'urgent' ? 'Ủng hộ ngay!' : 'Xem chi tiết'}
-                </button>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
+            </div>
+          </div>
         </div>
 
         {/* View All Button */}
         <div className="text-center mt-10">
-          <button className={`px-8 py-3 rounded-full font-semibold text-white transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl ${
-            type === 'urgent' ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' :
-            type === 'successful' ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' :
-            'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
-          }`}>
+          <Link 
+            href="/campaigns"
+            className={`inline-block px-8 py-3 rounded-full font-semibold text-white transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl ${
+              type === 'urgent' ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' :
+              type === 'successful' ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' :
+              'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+            }`}
+          >
             {type === 'urgent' ? 'Xem thêm chiến dịch cần ưu tiên' :
              type === 'successful' ? 'Xem thêm chiến dịch thành công' :
              'Xem tất cả chiến dịch nổi bật'}
-          </button>
+          </Link>
         </div>
       </div>
     </section>

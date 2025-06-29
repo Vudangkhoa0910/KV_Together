@@ -14,31 +14,29 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const { isViewAsUser } = useAdminView();
   const pathname = usePathname();
   
-  // Check if we're on an admin route
-  const isAdminRoute = pathname?.startsWith('/admin');
+  // Check if we're on an admin route (including super-admin)
+  const isAdminRoute = pathname?.startsWith('/admin') || pathname?.startsWith('/super-admin');
   
-  // If admin is viewing as user, or not on admin route, show regular layout
-  const showRegularLayout = !isAdminRoute || (user?.role?.slug === 'admin' && isViewAsUser);
-  
-  if (showRegularLayout) {
+  // For admin routes, always use admin layout regardless of view mode
+  // The view toggle should only affect the UI styling, not the layout
+  if (isAdminRoute) {
     return (
       <>
-        <Header />
-        <main className="main-content">
-          {children}
-        </main>
-        <Footer />
-        {/* Show toggle button for admin users */}
-        {user?.role?.slug === 'admin' && <AdminViewToggle />}
+        {children}
+        {user?.role?.slug === 'admin' && !pathname?.startsWith('/super-admin') && <AdminViewToggle />}
       </>
     );
   }
   
-  // For admin routes without "view as user" mode, show children directly
-  // (AdminLayout will handle the layout)
+  // For non-admin routes, show regular layout
   return (
     <>
-      {children}
+      <Header />
+      <main className="main-content">
+        {children}
+      </main>
+      <Footer />
+      {/* Show toggle button for admin users */}
       {user?.role?.slug === 'admin' && <AdminViewToggle />}
     </>
   );

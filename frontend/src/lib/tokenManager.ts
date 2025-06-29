@@ -11,8 +11,8 @@ interface TokenInfo {
 }
 
 export class TokenManager {
-  private static readonly TOKEN_LIFETIME = 60 * 60 * 1000; // 1 hour
-  private static readonly REFRESH_THRESHOLD = 50 * 60 * 1000; // Refresh when 50 minutes old
+  private static readonly TOKEN_LIFETIME = 24 * 60 * 60 * 1000; // 24 hours (matches Sanctum)
+  private static readonly REFRESH_THRESHOLD = 23 * 60 * 60 * 1000; // Refresh when 23 hours old
 
   static getTokenInfo(): TokenInfo | null {
     const token = localStorage.getItem('token');

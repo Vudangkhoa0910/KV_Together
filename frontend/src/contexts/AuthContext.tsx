@@ -15,6 +15,10 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  phone?: string;
+  address?: string;
+  bio?: string;
+  created_at?: string;
   role: {
     slug: string;
     name: string;
@@ -32,6 +36,8 @@ interface AuthContextType {
   registerUser: (data: any) => Promise<any>;
   refreshToken: () => Promise<string>;
   clearError: () => void;
+  updateUser: (userData: Partial<User>) => void;
+  setDevAuth: (userData: User, authToken: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,11 +48,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false); // Prevent multiple simultaneous refreshes
   const router = useRouter();
 
   // Function to refresh token
   const refreshToken = async () => {
+    if (refreshing) {
+      console.log('Refresh already in progress, skipping...');
+      return null;
+    }
+    
     try {
+      setRefreshing(true);
       console.log('Attempting to refresh token...');
       const currentToken = localStorage.getItem('token');
       
@@ -75,9 +88,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       console.error('Token refresh failed:', error);
-      clearAuthState();
-      router.push('/auth/login');
+      
+      // Handle different types of errors gracefully
+      if (error.response?.status === 429) {
+        console.log('Rate limited on refresh, keeping current auth state');
+        throw new Error('Rate limiting token refresh');
+      } else if (error.response?.status === 401) {
+        console.log('Authentication failed during refresh, clearing auth state');
+        clearAuthState();
+        router.push('/auth/login');
+      } else {
+        console.log('Network or server error during refresh, keeping auth state for now');
+        // For network errors, don't immediately clear auth state
+        // Let the user continue using the app with current token
+        return null;
+      }
+      
       throw error;
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -157,6 +186,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       secure: false, // Set to true in production with HTTPS
       sameSite: 'lax'
     });
+    
+    // Reset admin view state to admin mode for admin users
+    if (userData.role?.slug === 'admin') {
+      localStorage.removeItem('adminViewAsUser');
+    }
     
     // Set token in axios instance
     axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
@@ -248,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        console.log('Token is valid, setting up axios and fetching user data...');
+        console.log('Token is valid, setting up axios and using stored user data...');
         // Set up axios defaults
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
 
@@ -260,39 +294,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(userData);
             setToken(currentToken);
             setIsAuthenticated(true);
+            
+            // Only validate token with server occasionally to avoid unnecessary 401 errors
+            const lastValidated = Cookies.get('token_last_validated');
+            const shouldValidateToken = !lastValidated || 
+                                      (Date.now() - parseInt(lastValidated)) > (4 * 60 * 60 * 1000); // 4 hours
+            
+            if (shouldValidateToken) {
+              console.log('Validating token with server (periodic check)...');
+              try {
+                const response = await axiosInstance.get(`/auth/user`);
+                const freshUserData = response.data.user;
+                
+                // Update with fresh data if different
+                if (JSON.stringify(userData) !== JSON.stringify(freshUserData)) {
+                  console.log('Updating user data with fresh server data');
+                  setUser(freshUserData);
+                  Cookies.set('user', JSON.stringify(freshUserData), { expires: 7 });
+                }
+                
+                // Mark token as validated
+                Cookies.set('token_last_validated', Date.now().toString(), { expires: 7 });
+              } catch (validationError: any) {
+                console.log('Token validation failed, but keeping stored auth state:', validationError.response?.status);
+                
+                // Only clear auth if it's actually a 401 and not a network/server error
+                if (validationError.response?.status === 401) {
+                  console.log('Authentication invalid, clearing auth state');
+                  clearAuthState();
+                  return;
+                }
+                // For other errors (network, 500, etc.), keep the stored state
+                console.log('Keeping stored auth state due to server/network error');
+              }
+            } else {
+              console.log('Token validation skipped (recent validation found)');
+            }
           } catch (parseError) {
             console.error('Failed to parse stored user data:', parseError);
+            clearAuthState();
           }
-        }
+        } else {
+          // No stored user data, need to fetch from server
+          try {
+            const response = await axiosInstance.get(`/auth/user`);
+            const userData = response.data.user;
 
-        // Validate token by fetching fresh user details
-        try {
-          const response = await axiosInstance.get(`/auth/user`);
-          const userData = response.data.user;
-
-          console.log('User data fetched successfully:', userData);
-          
-          // Update with fresh data
-          setUser(userData);
-          setToken(currentToken);
-          setIsAuthenticated(true);
-          
-          // Update stored user data if different
-          if (storedUser !== JSON.stringify(userData)) {
+            console.log('User data fetched successfully:', userData);
+            
+            // Set up auth state
+            setUser(userData);
+            setToken(currentToken);
+            setIsAuthenticated(true);
+            
+            // Store user data and validation timestamp
             Cookies.set('user', JSON.stringify(userData), { expires: 7 });
-          }
-        } catch (fetchError: any) {
-          console.error('Failed to fetch user data:', fetchError);
-          
-          // If we have stored user data and it's just a network error, keep using it
-          if (storedUser && fetchError.code === 'NETWORK_ERROR') {
-            console.log('Network error, but keeping stored auth state');
-            return; // Keep the stored state we already set
-          }
-          
-          // For auth errors, clear everything
-          if (fetchError.response?.status === 401) {
-            console.log('Authentication failed, clearing auth state');
+            Cookies.set('token_last_validated', Date.now().toString(), { expires: 7 });
+          } catch (fetchError: any) {
+            console.error('Failed to fetch user data:', fetchError);
             clearAuthState();
           }
         }
@@ -312,16 +371,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry && token) {
+        // Only attempt refresh for auth endpoints and critical requests
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/');
+        const isAdminEndpoint = originalRequest.url?.includes('/admin/');
+        
+        if (error.response?.status === 401 && !originalRequest._retry && token && !refreshing && (isAuthEndpoint || isAdminEndpoint)) {
           originalRequest._retry = true;
           
           try {
-            console.log('401 error detected, attempting token refresh...');
+            console.log('401 error detected on critical endpoint, attempting token refresh...');
             const newToken = await refreshToken();
-            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-            return axiosInstance(originalRequest);
+            if (newToken) {
+              originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+              return axiosInstance(originalRequest);
+            }
           } catch (refreshError) {
-            console.error('Token refresh failed, redirecting to login');
+            console.error('Token refresh failed during interceptor');
+            // Don't redirect here, let the component handle it
             return Promise.reject(error);
           }
         }
@@ -336,19 +402,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Auto refresh token periodically (every 55 minutes if token is valid)
+  // Auto refresh token periodically (every 12 hours since Sanctum tokens last 24 hours)
   useEffect(() => {
     if (!isAuthenticated || !token) return;
 
     const autoRefreshInterval = setInterval(async () => {
       try {
-        console.log('Auto-refreshing token...');
-        await refreshToken();
-      } catch (error) {
+        console.log('Auto-refreshing token (12 hour check)...');
+        // Only refresh if we're approaching expiration (TokenManager handles this)
+        const refreshedToken = await TokenManager.refreshTokenIfNeeded();
+        if (refreshedToken && refreshedToken !== token) {
+          console.log('Token was refreshed during periodic check');
+          setToken(refreshedToken);
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${refreshedToken}`;
+        }
+      } catch (error: any) {
         console.error('Auto refresh failed:', error);
-        clearInterval(autoRefreshInterval);
+        // Don't clear interval for rate limiting or network errors
+        if (error.response?.status === 401) {
+          clearInterval(autoRefreshInterval);
+        }
       }
-    }, 55 * 60 * 1000); // 55 minutes
+    }, 12 * 60 * 60 * 1000); // 12 hours
 
     return () => clearInterval(autoRefreshInterval);
   }, [isAuthenticated, token]);
@@ -447,6 +522,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData });
+    }
+  };
+
+  const setDevAuth = (userData: User, authToken: string) => {
+    console.log('Setting dev auth with:', { userData, tokenLength: authToken.length });
+    setupAuthState(userData, authToken);
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -457,7 +543,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     registerUser,
     refreshToken,
-    clearError
+    clearError,
+    updateUser,
+    setDevAuth
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

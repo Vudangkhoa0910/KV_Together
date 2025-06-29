@@ -3,9 +3,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminHeader from '@/components/admin/AdminHeader';
-import DevTokenSetter from '@/components/DevTokenSetter';
 
 export default function AdminLayout({
   children,
@@ -18,7 +15,7 @@ export default function AdminLayout({
   useEffect(() => {
     if (!loading) {
       if (!isAuthenticated || !user) {
-        router.push('/auth/login');
+        router.push('/auth/login?redirect=/super-admin');
         return;
       }
       
@@ -26,6 +23,9 @@ export default function AdminLayout({
         router.push('/unauthorized');
         return;
       }
+
+      // Redirect to new super admin dashboard
+      router.push('/super-admin');
     }
   }, [user, isAuthenticated, loading, router]);
 
@@ -37,30 +37,6 @@ export default function AdminLayout({
     );
   }
 
-  if (!isAuthenticated || !user || user.role?.slug !== 'admin') {
-    return null;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Development token setter */}
-      <DevTokenSetter />
-      
-      {/* Admin Sidebar */}
-      <AdminSidebar />
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:pl-64">
-        {/* Admin Header */}
-        <AdminHeader />
-        
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="h-full">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  // This admin route is deprecated - redirect to super-admin
+  return null;
 }
