@@ -11,12 +11,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CampaignController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->except(['index', 'show', 'featured', 'getCompleted', 'getEnded', 'getRecentSuccessful', 'getUrgent', 'getStatus', 'getSystemStatus']);
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'featured', 'getPopular', 'getCompleted', 'getEnded', 'getRecentSuccessful', 'getUrgent', 'getStatus', 'getSystemStatus']);
     }
 
     public function index()
@@ -52,6 +54,13 @@ class CampaignController extends Controller
                     break;
                 case 'amount':
                     $query->orderByDesc('current_amount');
+                    break;
+                case 'donations':
+                case 'donations_desc':
+                    $query->orderByDesc('donations_count');
+                    break;
+                case 'donations_asc':
+                    $query->orderBy('donations_count');
                     break;
                 case 'deadline':
                     $query->orderBy('end_date');
@@ -105,6 +114,7 @@ class CampaignController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'content' => 'nullable|string',
             'target_amount' => 'required|numeric|min:1000000',
             'end_date' => 'required|date|after:today',
             'category_id' => 'required|exists:categories,id',
@@ -113,6 +123,7 @@ class CampaignController extends Controller
             'title.required' => 'Tiêu đề chiến dịch là bắt buộc',
             'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
             'description.required' => 'Mô tả chiến dịch là bắt buộc',
+            'content.string' => 'Nội dung phải là chuỗi ký tự',
             'target_amount.required' => 'Số tiền mục tiêu là bắt buộc',
             'target_amount.min' => 'Số tiền mục tiêu tối thiểu là 1.000.000đ',
             'end_date.required' => 'Ngày kết thúc là bắt buộc',
@@ -136,7 +147,28 @@ class CampaignController extends Controller
 
         $validated['organizer_id'] = auth()->id();
         $validated['current_amount'] = 0;
-            $validated['status'] = 'pending';
+        $validated['status'] = 'pending';
+        
+        // Tạo slug từ title
+        $baseSlug = Str::slug($validated['title']);
+        $slug = $baseSlug;
+        $counter = 1;
+        
+        // Đảm bảo slug unique
+        while (Campaign::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+        
+        $validated['slug'] = $slug;
+        
+        // Thiết lập content mặc định nếu không có
+        if (empty($validated['content'])) {
+            $validated['content'] = $validated['description'];
+        }
+        
+        // Thiết lập start_date là ngày hiện tại
+        $validated['start_date'] = now();
 
         $campaign = Campaign::create($validated);
 
@@ -146,11 +178,18 @@ class CampaignController extends Controller
             })->get();
 
             foreach ($admins as $admin) {
-        Notification::create([
-                    'user_id' => $admin->id,
-                    'type' => 'new_campaign',
-                    'message' => "Chiến dịch mới '{$campaign->title}' cần được phê duyệt.",
-                    'data' => ['campaign_id' => $campaign->id]
+                DB::table('notifications')->insert([
+                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'type' => 'App\\Notifications\\NewCampaign',
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $admin->id,
+                    'data' => json_encode([
+                        'campaign_id' => $campaign->id,
+                        'campaign_title' => $campaign->title,
+                        'message' => "Chiến dịch mới '{$campaign->title}' cần được phê duyệt."
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
 
@@ -282,7 +321,7 @@ class CampaignController extends Controller
                 ->with(['categories', 'organizer'])
                 ->withCount('donations')
                 ->latest()
-                ->limit(3)
+                ->limit(6)
                 ->get();
             
             // Add image URLs
@@ -441,33 +480,128 @@ class CampaignController extends Controller
         $this->authorize('delete', $campaign);
 
         try {
-        if ($campaign->image) {
-            Storage::disk('public')->delete($campaign->image);
-        }
-        if ($campaign->images) {
-            foreach ($campaign->images as $image) {
-                Storage::disk('public')->delete($image);
+            // Không xóa trực tiếp, mà tạo yêu cầu xóa
+            $campaign->update([
+                'deletion_requested' => true,
+                'deletion_requested_at' => now(),
+                'deletion_status' => 'pending'
+            ]);
+
+            // Thông báo cho admin về yêu cầu xóa
+            $admins = User::whereHas('role', function($query) {
+                $query->where('slug', 'admin');
+            })->get();
+
+            foreach ($admins as $admin) {
+                DB::table('notifications')->insert([
+                    'id' => (string) Str::uuid(),
+                    'type' => 'App\\Notifications\\CampaignDeletionRequest',
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $admin->id,
+                    'data' => json_encode([
+                        'campaign_id' => $campaign->id,
+                        'campaign_title' => $campaign->title,
+                        'organizer_name' => $campaign->organizer->name ?? 'Unknown',
+                        'message' => "Yêu cầu xóa chiến dịch '{$campaign->title}' cần được xem xét."
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
-        }
 
-        $campaign->delete();
-
-            Log::info('Campaign deleted', ['campaign_id' => $campaign->id, 'user_id' => auth()->id()]);
+            Log::info('Campaign deletion requested', ['campaign_id' => $campaign->id, 'user_id' => auth()->id()]);
 
             return response()->json([
-                'message' => 'Chiến dịch đã được xóa thành công.'
+                'message' => 'Yêu cầu xóa chiến dịch đã được gửi và đang chờ phê duyệt từ admin.'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Campaign deletion failed', [
+            Log::error('Campaign deletion request failed', [
                 'error' => $e->getMessage(),
                 'campaign_id' => $campaign->id,
                 'user_id' => auth()->id()
             ]);
 
             return response()->json([
-                'message' => 'Có lỗi xảy ra khi xóa chiến dịch.',
-                'error' => $e->getMessage()
+                'message' => 'Có lỗi xảy ra khi gửi yêu cầu xóa chiến dịch.'
+            ], 500);
+        }
+    }
+
+    public function requestDeletion(Request $request, Campaign $campaign)
+    {
+        $this->authorize('delete', $campaign);
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ], [
+            'reason.required' => 'Vui lòng nhập lý do xóa chiến dịch.',
+            'reason.max' => 'Lý do không được vượt quá 1000 ký tự.',
+        ]);
+
+        try {
+            // Kiểm tra xem đã có yêu cầu xóa nào đang pending không
+            if ($campaign->deletion_requested && $campaign->deletion_status === 'pending') {
+                return response()->json([
+                    'message' => 'Chiến dịch này đã có yêu cầu xóa đang chờ phê duyệt.'
+                ], 400);
+            }
+
+            // Cập nhật yêu cầu xóa
+            $campaign->update([
+                'deletion_requested' => true,
+                'deletion_reason' => $validated['reason'],
+                'deletion_requested_at' => now(),
+                'deletion_status' => 'pending'
+            ]);
+
+            // Thông báo cho admin về yêu cầu xóa
+            $admins = User::whereHas('role', function($query) {
+                $query->where('slug', 'admin');
+            })->get();
+
+            foreach ($admins as $admin) {
+                DB::table('notifications')->insert([
+                    'id' => (string) Str::uuid(),
+                    'type' => 'App\\Notifications\\CampaignDeletionRequest',
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $admin->id,
+                    'data' => json_encode([
+                        'campaign_id' => $campaign->id,
+                        'campaign_title' => $campaign->title,
+                        'organizer_name' => $campaign->organizer->name ?? 'Unknown',
+                        'deletion_reason' => $validated['reason'],
+                        'message' => "Yêu cầu xóa chiến dịch '{$campaign->title}' cần được xem xét."
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            Log::info('Campaign deletion requested with reason', [
+                'campaign_id' => $campaign->id, 
+                'user_id' => auth()->id(),
+                'reason' => $validated['reason']
+            ]);
+
+            return response()->json([
+                'message' => 'Yêu cầu xóa chiến dịch đã được gửi và đang chờ phê duyệt từ admin.',
+                'data' => [
+                    'deletion_requested' => true,
+                    'deletion_status' => 'pending',
+                    'deletion_requested_at' => $campaign->fresh()->deletion_requested_at
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Campaign deletion request failed', [
+                'error' => $e->getMessage(),
+                'campaign_id' => $campaign->id,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi gửi yêu cầu xóa chiến dịch.'
             ], 500);
         }
     }
@@ -953,6 +1087,44 @@ class CampaignController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching ended campaigns:', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Có lỗi xảy ra khi tải danh sách chiến dịch đã kết thúc'], 500);
+        }
+    }
+
+    public function getPopular(Request $request)
+    {
+        try {
+            $limit = $request->get('limit', 5);
+            $type = $request->get('type', 'donations'); // 'donations' or 'random'
+            
+            $query = Campaign::where('status', 'active')
+                ->where('end_date', '>', now()) // Only non-expired campaigns
+                ->with(['categories', 'organizer'])
+                ->withCount('donations');
+            
+            if ($type === 'random') {
+                // Get random campaigns
+                $campaigns = $query->inRandomOrder()
+                    ->limit($limit)
+                    ->get();
+            } else {
+                // Get campaigns with most donations
+                $campaigns = $query->orderByDesc('donations_count')
+                    ->orderByDesc('current_amount')
+                    ->limit($limit)
+                    ->get();
+            }
+            
+            // Add image URLs and calculate additional data
+            foreach ($campaigns as $campaign) {
+                $campaign->image_url = $campaign->getImageUrlAttribute();
+                $campaign->images_url = $campaign->getImagesUrlAttribute();
+                $campaign->time_left = now()->diffInDays($campaign->end_date, false);
+            }
+            
+            return response()->json($campaigns);
+        } catch (\Exception $e) {
+            Log::error('Error fetching popular campaigns:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Có lỗi xảy ra khi tải danh sách chiến dịch phổ biến'], 500);
         }
     }
 }

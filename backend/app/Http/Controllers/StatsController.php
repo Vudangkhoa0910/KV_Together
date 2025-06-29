@@ -18,17 +18,12 @@ class StatsController extends Controller
                                     ->where('end_date', '>', now())
                                     ->count();
             
-            // Calculate correct totals for active campaigns only (exclude stats donations)
-            $activeCampaignIds = Campaign::where('status', 'active')
-                                       ->where('end_date', '>', now())
-                                       ->pluck('id');
+            // Calculate correct totals for ALL completed donations (not just active campaigns)
             $totalDonors = Donation::where('status', 'completed')
-                ->whereIn('campaign_id', $activeCampaignIds)
                 ->where('is_stats', false) // Exclude stats donations
                 ->distinct('user_id')
                 ->count('user_id'); 
             $totalAmountRaised = Donation::where('status', 'completed')
-                ->whereIn('campaign_id', $activeCampaignIds)
                 ->where('is_stats', false) // Exclude stats donations
                 ->sum('amount');
             
@@ -53,24 +48,27 @@ class StatsController extends Controller
             })->where('status', 'active')->count();
 
             // Thống kê chi tiết mới - sử dụng dữ liệu thực
-            $avgDonationAmount = Donation::where('status', 'completed')->avg('amount') ?: 0;
+            $avgDonationAmount = Donation::where('status', 'completed')
+                ->where('is_stats', false)
+                ->avg('amount') ?: 0;
             $successfulCampaigns = Campaign::where('status', 'completed')->count();
             $successRate = $totalCampaigns > 0 ? round(($successfulCampaigns / Campaign::count()) * 100, 1) : 0;
             
             // Tính tổng tiền các chiến dịch hoàn thành
             $completedCampaignsAmount = Campaign::where('status', 'completed')->sum('current_amount');
             
-            // Không điều chỉnh success rate - sử dụng số thực
-            
-            // Thống kê theo tháng hiện tại
+            // Thống kê theo tháng hiện tại - chỉ tính non-stats donations
             $thisMonthDonations = Donation::where('status', 'completed')
+                ->where('is_stats', false) // Exclude stats donations
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->sum('amount');
             
-            $thisMonthDonors = Donation::distinct('user_id')
+            $thisMonthDonors = Donation::where('status', 'completed')
+                ->where('is_stats', false) // Exclude stats donations
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
+                ->distinct('user_id')
                 ->count('user_id');
 
             return response()->json([

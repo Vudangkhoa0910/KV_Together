@@ -13,6 +13,14 @@ class Campaign extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
     protected $fillable = [
         'title',
         'slug',
@@ -34,6 +42,12 @@ class Campaign extends Model
         'organizer_id',
         'rejection_reason',
         'is_featured',
+        // Deletion fields
+        'deletion_requested',
+        'deletion_reason',
+        'deletion_requested_at',
+        'deletion_status',
+        'deletion_admin_note',
         // Funding policies
         'funding_type',
         'minimum_goal',
@@ -45,10 +59,12 @@ class Campaign extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'deletion_requested_at' => 'datetime',
         'target_amount' => 'decimal:2',
         'current_amount' => 'decimal:2',
         'minimum_goal' => 'decimal:2',
         'is_featured' => 'boolean',
+        'deletion_requested' => 'boolean',
         'auto_disburse' => 'boolean',
         'accepts_credits' => 'boolean',
         'images' => 'json'
@@ -73,7 +89,7 @@ class Campaign extends Model
     }
 
     protected $with = ['categories', 'organizer'];
-    protected $appends = ['progress_percentage', 'days_remaining', 'image_url', 'images_url'];
+    protected $appends = ['progress_percentage', 'days_remaining', 'image_url', 'images_url', 'donations_count'];
     protected $dates = ['start_date', 'end_date'];
 
     public function categories()
@@ -125,6 +141,11 @@ class Campaign extends Model
     public function getDaysRemainingAttribute(): int
     {
         return max(0, now()->diffInDays($this->end_date, false));
+    }
+
+    public function getDonationsCountAttribute(): int
+    {
+        return $this->donations()->count();
     }
 
     public function isActive(): bool

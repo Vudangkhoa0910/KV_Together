@@ -21,9 +21,15 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             UserSeeder::class,
             CampaignSeeder::class,
+            NewsSeeder::class,
             ActivitySeeder::class,
+            ActivityRegistrationSeeder::class,
             DonationSeeder::class,
             MonthlyStatsSeeder::class,
+            FundraiserDemoSeeder::class,
+            // Financial transparency seeders
+            FinancialTransactionSeeder::class,
+            FinancialReportSeeder::class,
         ]);
     }
 }

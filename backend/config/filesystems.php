@@ -47,6 +47,15 @@ return [
             'report' => false,
         ],
 
+        'data' => [
+            'driver' => 'local',
+            'root' => base_path('data'),
+            'url' => env('APP_URL').'/data',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

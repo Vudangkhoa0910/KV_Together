@@ -96,7 +96,6 @@ class ActivitySeeder extends Seeder
                         }
                     }
                 }
-                
                 // Fallback: check for individual image files
                 if (!$imagePath) {
                     $imageFiles = ['image.jpg', 'image.png', 'image.jpeg'];
@@ -128,7 +127,7 @@ class ActivitySeeder extends Seeder
                     'organizer_name' => $data['organizer_name'] ?? $organizer->name,
                     'category' => $category,
                     'status' => 'published',
-                    'is_featured' => rand(0, 100) < 30, // 30% chance of being featured
+                    'is_featured' => rand(0, 100) < 30,
                     'location' => $data['location'],
                     'event_date' => $data['event_date'],
                     'registration_deadline' => $data['registration_deadline'],

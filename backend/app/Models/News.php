@@ -62,7 +62,6 @@ class News extends Model
 
     public function getExcerptAttribute($length = 150)
     {
-        // Ensure $length is always an integer to avoid mb_strimwidth error
         $length = (int) $length;
         return Str::limit(strip_tags($this->content), $length);
     }
@@ -70,7 +69,7 @@ class News extends Model
     public function getReadTimeAttribute()
     {
         $words = str_word_count(strip_tags($this->content));
-        $minutes = ceil($words / 200); // Average reading speed: 200 words per minute
+        $minutes = ceil($words / 200);
         return $minutes . ' phút';
     }
 
