@@ -16,7 +16,9 @@ const CampaignProgress: React.FC<CampaignProgressProps> = ({
   const remainingAmount = Math.max(0, target - current);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+    // Handle NaN, Infinity, and null/undefined values
+    const safeAmount = isNaN(amount) || !isFinite(amount) || amount == null ? 0 : amount;
+    return new Intl.NumberFormat('vi-VN').format(safeAmount) + 'đ';
   };
 
   // Luôn hiển thị progress bar, chỉ ẩn khi dữ liệu không hợp lệ

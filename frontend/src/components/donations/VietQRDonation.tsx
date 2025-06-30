@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { formatCurrency } from '@/utils/format';
+import toast from 'react-hot-toast';
 
 interface VietQRDonationProps {
   paymentInfo: {
@@ -190,7 +191,10 @@ const VietQRDonation: React.FC<VietQRDonationProps> = ({ paymentInfo, onClose, o
                 className="font-semibold ml-1 cursor-pointer hover:text-green-600"
                 onClick={() => {
                   navigator.clipboard.writeText(paymentInfo.account_number);
-                  alert('Đã sao chép số tài khoản!');
+                  toast.success('Đã sao chép số tài khoản!', {
+                    duration: 2000,
+                    icon: '📋',
+                  });
                 }}
               >
                 {paymentInfo.account_number} 
@@ -207,7 +211,10 @@ const VietQRDonation: React.FC<VietQRDonationProps> = ({ paymentInfo, onClose, o
                 onClick={() => {
                   const contentToCopy = paymentInfo.message || transactionCode;
                   navigator.clipboard.writeText(contentToCopy);
-                  alert('Đã sao chép nội dung chuyển khoản!');
+                  toast.success('Đã sao chép nội dung chuyển khoản!', {
+                    duration: 2000,
+                    icon: '📋',
+                  });
                 }}
               >
                 {paymentInfo.message || transactionCode}

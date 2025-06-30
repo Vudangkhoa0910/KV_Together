@@ -53,6 +53,16 @@ class Activity extends Model
         return $this->belongsTo(User::class, 'organizer_id');
     }
 
+    public function registrations()
+    {
+        return $this->hasMany(ActivityRegistration::class);
+    }
+
+    public function confirmedRegistrations()
+    {
+        return $this->hasMany(ActivityRegistration::class)->where('status', 'confirmed');
+    }
+
     // Accessors
     public function getImageUrlAttribute()
     {

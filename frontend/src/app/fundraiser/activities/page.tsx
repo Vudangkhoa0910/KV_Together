@@ -42,26 +42,36 @@ export default function FundraiserActivitiesPage() {
     
     try {
       setLoading(true);
-      const params: any = {
-        page,
-        organizer_id: user.id
-      };
+      
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        per_page: '10',
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      });
       
       if (filter !== 'all') {
-        params.status = filter;
-      }
-      
-      if (categoryFilter !== 'all') {
-        params.category = categoryFilter;
+        queryParams.append('status', filter);
       }
       
       if (searchTerm) {
-        params.search = searchTerm;
+        queryParams.append('search', searchTerm);
       }
       
-      const response = await getActivities(params);
-      setActivities(response.data);
-      setTotalPages(response.last_page);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/activities?${queryParams}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch activities');
+      }
+      
+      const data = await response.json();
+      setActivities(data.data);
+      setTotalPages(data.last_page);
     } catch (error) {
       console.error('Error fetching fundraiser activities:', error);
     } finally {
@@ -288,13 +298,30 @@ export default function FundraiserActivitiesPage() {
               <div key={activity.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        {activity.title}
-                      </h3>
-                      <p className="text-gray-600 mb-4 line-clamp-2">
-                        {activity.summary}
-                      </p>
+                    <div className="flex items-start space-x-4 flex-1">
+                      {/* Image */}
+                      {activity.image && (
+                        <div className="w-20 h-20 flex-shrink-0">
+                          <img 
+                            src={`http://localhost:8000/storage/${activity.image}`} 
+                            alt={activity.title}
+                            className="w-full h-full object-cover rounded-lg"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Content */}
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                          {activity.title}
+                        </h3>
+                        <p className="text-gray-600 mb-4 line-clamp-2">
+                          {activity.summary}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(activity.status)}`}>
@@ -337,12 +364,12 @@ export default function FundraiserActivitiesPage() {
                   <div className="mb-4">
                     <div className="flex justify-between text-sm text-gray-600 mb-1">
                       <span>Đã đăng ký</span>
-                      <span>{Math.round((activity.current_participants / activity.max_participants) * 100)}%</span>
+                      <span>{activity.max_participants ? Math.round((activity.current_participants / activity.max_participants) * 100) : 0}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${Math.min((activity.current_participants / activity.max_participants) * 100, 100)}%` }}
+                        style={{ width: `${activity.max_participants ? Math.min((activity.current_participants / activity.max_participants) * 100, 100) : 0}%` }}
                       ></div>
                     </div>
                   </div>

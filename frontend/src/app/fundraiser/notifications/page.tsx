@@ -38,6 +38,42 @@ export default function NotificationsPage() {
     try {
       setLoading(true);
       
+<<<<<<< HEAD
+      const queryParams = new URLSearchParams({ per_page: '20' });
+      if (filter === 'unread') {
+        queryParams.append('unread_only', 'true');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/notifications?${queryParams}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
+      
+      const data = await response.json();
+      
+      // Map backend notifications to frontend format
+      const mappedNotifications = data.data?.map((notif: any) => ({
+        id: notif.id,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        read: !!notif.read_at,
+        created_at: notif.created_at,
+        campaign_id: notif.data?.campaign_id,
+        donation_id: notif.data?.donation_id
+      })) || [];
+      
+      setNotifications(mappedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]);
+=======
       // In production, this would be a real API call
       // const response = await fetch(`/api/fundraiser/notifications?filter=${filter}`);
       // const data = await response.json();
@@ -127,6 +163,7 @@ export default function NotificationsPage() {
       setNotifications(filteredNotifications);
     } catch (err) {
       console.error('Error fetching notifications:', err);
+>>>>>>> origin/main
     } finally {
       setLoading(false);
     }
@@ -134,6 +171,23 @@ export default function NotificationsPage() {
   
   const markAsRead = async (id: number) => {
     try {
+<<<<<<< HEAD
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/notifications/${id}/read`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.id === id ? { ...notification, read: true } : notification
+          )
+        );
+      }
+=======
       // In production, this would be a real API call
       // await fetch(`/api/fundraiser/notifications/${id}/read`, {
       //   method: 'PUT'
@@ -145,6 +199,7 @@ export default function NotificationsPage() {
           notification.id === id ? { ...notification, read: true } : notification
         )
       );
+>>>>>>> origin/main
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -152,6 +207,11 @@ export default function NotificationsPage() {
   
   const markAllAsRead = async () => {
     try {
+<<<<<<< HEAD
+      // Mark all notifications as read individually
+      const unreadNotifications = notifications.filter(n => !n.read);
+      await Promise.all(unreadNotifications.map(n => markAsRead(n.id)));
+=======
       // In production, this would be a real API call
       // await fetch(`/api/fundraiser/notifications/read-all`, {
       //   method: 'PUT'
@@ -161,6 +221,7 @@ export default function NotificationsPage() {
       setNotifications(prev => 
         prev.map(notification => ({ ...notification, read: true }))
       );
+>>>>>>> origin/main
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
     }
@@ -168,12 +229,16 @@ export default function NotificationsPage() {
   
   const deleteNotification = async (id: number) => {
     try {
+<<<<<<< HEAD
+      // For now, just remove from local state
+=======
       // In production, this would be a real API call
       // await fetch(`/api/fundraiser/notifications/${id}`, {
       //   method: 'DELETE'
       // });
       
       // Update in local state
+>>>>>>> origin/main
       setNotifications(prev => 
         prev.filter(notification => notification.id !== id)
       );

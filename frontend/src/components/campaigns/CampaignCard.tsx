@@ -25,30 +25,47 @@ export function CampaignCard({ campaign, className = '' }: CampaignCardProps) {
   };
   
   const getUrgencyBadge = () => {
-    // Use display_status from backend if available
-    if (campaign.display_status === 'completed') {
-      return { text: 'Hoàn thành', style: 'bg-green-100 text-green-700' };
+    // Use status from backend to determine accurate badge
+    if (campaign.status === 'completed') {
+      return { text: '✅ Đã hoàn thành', style: 'bg-green-100 text-green-700 border-green-200' };
     }
-    if (campaign.display_status === 'stopped') {
-      return { text: 'Đã dừng', style: 'bg-yellow-100 text-yellow-700' };
+    if (campaign.status === 'ended_failed') {
+      return { text: '❌ Đã kết thúc', style: 'bg-red-100 text-red-700 border-red-200' };
     }
-    if (campaign.display_status === 'expired') {
-      return { text: 'Hết hạn', style: 'bg-orange-100 text-orange-700' };
+    if (campaign.status === 'ended_partial') {
+      return { text: '⚠️ Kết thúc (Một phần)', style: 'bg-orange-100 text-orange-700 border-orange-200' };
     }
     
-    // Fallback to percentage-based logic if display_status not available
+    // Use display_status from backend as fallback
+    if (campaign.display_status === 'completed') {
+      return { text: '✅ Hoàn thành', style: 'bg-green-100 text-green-700 border-green-200' };
+    }
+    if (campaign.display_status === 'stopped') {
+      return { text: 'Đã dừng', style: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+    }
+    if (campaign.display_status === 'expired') {
+      return { text: 'Hết hạn', style: 'bg-orange-100 text-orange-700 border-orange-200' };
+    }
+    
+    // Active campaign logic based on urgency
+    if (campaign.status === 'active') {
+      if (daysLeftNumber <= 3 && campaign.progress_percentage < 90) {
+        return { text: '🚨 Gấp', style: 'bg-red-100 text-red-700 border-red-200' };
+      }
+      if (daysLeftNumber <= 7 && campaign.progress_percentage < 80) {
+        return { text: '⏰ Cần hỗ trợ', style: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+      }
+      if (campaign.progress_percentage >= 80) {
+        return { text: '🎯 Gần đạt', style: 'bg-blue-100 text-blue-700 border-blue-200' };
+      }
+      return { text: '🟢 Đang hoạt động', style: 'bg-blue-100 text-blue-700 border-blue-200' };
+    }
+    
+    // Fallback to percentage-based logic
     if (campaign.progress_percentage >= 100) {
-      return { text: 'Hoàn thành', style: 'bg-green-100 text-green-700' };
+      return { text: '✅ Hoàn thành', style: 'bg-green-100 text-green-700 border-green-200' };
     }
-    if (daysLeftNumber <= 3 && campaign.progress_percentage < 90) {
-      return { text: 'Gấp', style: 'bg-red-100 text-red-700' };
-    }
-    if (daysLeftNumber <= 7 && campaign.progress_percentage < 80) {
-      return { text: 'Cần hỗ trợ', style: 'bg-orange-100 text-orange-700' };
-    }
-    if (campaign.progress_percentage >= 80) {
-      return { text: 'Gần đạt', style: 'bg-blue-100 text-blue-700' };
-    }
+    
     return null;
   };
   

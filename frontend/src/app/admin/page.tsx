@@ -1,5 +1,17 @@
 'use client';
 
+<<<<<<< HEAD
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function AdminDashboard() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to new super admin dashboard
+    router.push('/super-admin');
+  }, [router]);
+=======
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
@@ -160,6 +172,7 @@ export default function AdminDashboard() {
       href: '/admin/analytics',
     },
   ];
+>>>>>>> origin/main
 
   if (isLoading) {
     return (
@@ -191,6 +204,13 @@ export default function AdminDashboard() {
   }
 
   return (
+<<<<<<< HEAD
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Redirecting to Super Admin Dashboard...</p>
+      </div>
+=======
     <div className="space-y-8 bg-gray-50 min-h-screen p-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -441,6 +461,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </div>
+>>>>>>> origin/main
     </div>
   );
 }

@@ -21,13 +21,21 @@ class DonationController extends Controller
     /**
      * Tạo donation mới
      */
-    public function store(Request $request, Campaign $campaign)
+    public function store(Request $request, $campaign_id)
     {
         // Add auth check
         if (!Auth::check()) {
             return response()->json([
                 'message' => 'Vui lòng đăng nhập để quyên góp'
             ], 401);
+        }
+
+        // Find campaign by ID
+        $campaign = Campaign::find($campaign_id);
+        if (!$campaign) {
+            return response()->json([
+                'message' => 'Không tìm thấy chiến dịch'
+            ], 404);
         }
 
         // Enhanced validation

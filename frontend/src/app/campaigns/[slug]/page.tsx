@@ -72,6 +72,7 @@ const CampaignDetails = () => {
   const checkCampaignStatus = () => {
     if (!campaign) return null;
     
+    // ✅ Đã hoàn thành: Đạt đủ target trong hoặc đúng hạn
     if (campaign.status === 'completed') {
       return (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
@@ -82,7 +83,7 @@ const CampaignDetails = () => {
             <div>
               <h3 className="text-lg font-semibold text-green-800">🎉 Chiến dịch đã hoàn thành!</h3>
               <p className="text-green-700">
-                Cảm ơn sự đóng góp của tất cả mọi người. Chiến dịch đã nhận được {formatCurrency(campaign.current_amount)}.
+                Cảm ơn sự đóng góp của tất cả mọi người. Chiến dịch đã đạt mục tiêu và tiền đã được chuyển đến tổ chức.
               </p>
             </div>
           </div>
@@ -90,6 +91,45 @@ const CampaignDetails = () => {
       );
     }
     
+    // ❌ Đã kết thúc (thất bại): Hết hạn và không đủ target, hoàn tiền
+    if (campaign.status === 'ended_failed') {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-red-800">❌ Chiến dịch đã kết thúc</h3>
+              <p className="text-red-700">
+                Chiến dịch đã hết hạn mà chưa đạt mục tiêu. Tiền đã được hoàn lại vào ví của các nhà tài trợ.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // ⚠️ Đã kết thúc (một phần): Hết hạn nhưng có flexible funding
+    if (campaign.status === 'ended_partial') {
+      return (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-orange-800">⏰ Chiến dịch đã kết thúc (Một phần)</h3>
+              <p className="text-orange-700">
+                Chiến dịch đã hết hạn và đạt được một phần mục tiêu. Tiền sẽ được chuyển đến tổ chức.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // 🟢 Đang hoạt động: Chưa hết hạn và chưa đạt target - hiển thị cảnh báo sắp hết hạn
     if (campaign.days_remaining <= 3 && campaign.days_remaining > 0) {
       return (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -100,7 +140,7 @@ const CampaignDetails = () => {
             <div>
               <h3 className="text-lg font-semibold text-yellow-800">⏰ Chiến dịch sắp kết thúc!</h3>
               <p className="text-yellow-700">
-                Chỉ còn {campaign.days_remaining} ngày để góp phần vào chiến dịch ý nghĩa này.
+                Chỉ còn {campaign.days_remaining} ngày để góp phần vào chiến dịch ý nghĩa này. Hãy nhanh tay ủng hộ!
               </p>
             </div>
           </div>
@@ -493,8 +533,8 @@ const CampaignDetails = () => {
                     Đăng nhập để quyên góp
                   </button>
                 </div>
-              ) : campaign.status === 'completed' || campaign.current_amount >= campaign.target_amount ? (
-                /* Campaign Completed State */
+              ) : campaign.status === 'completed' ? (
+                /* ✅ TRẠNG THÁI: ĐÃ HOÀN THÀNH - Đạt đủ target trong hoặc đúng hạn */
                 <div className="space-y-4">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                     <div className="flex items-center justify-center mb-4">
@@ -502,9 +542,9 @@ const CampaignDetails = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-semibold text-green-800 mb-2">Chiến dịch đã hoàn thành!</h3>
+                    <h3 className="text-xl font-semibold text-green-800 mb-2">🎉 Chiến dịch đã hoàn thành!</h3>
                     <p className="text-green-700 mb-4">
-                      Cảm ơn tất cả những người đã đóng góp. Chiến dịch đã đạt được mục tiêu {formatCurrency(campaign.target_amount)}.
+                      Cảm ơn tất cả những người đã đóng góp. Chiến dịch đã đạt được mục tiêu quyên góp và tiền sẽ được chuyển đến tổ chức để thực hiện dự án.
                     </p>
                     <div className="bg-white rounded-lg p-4 border border-green-200">
                       <div className="flex justify-between items-center text-sm">
@@ -512,9 +552,22 @@ const CampaignDetails = () => {
                         <span className="font-semibold text-green-800">{formatCurrency(campaign.current_amount)}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Mục tiêu ban đầu:</span>
+                        <span className="font-semibold text-gray-600">{formatCurrency(campaign.target_amount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
                         <span className="text-gray-600">Số người đóng góp:</span>
                         <span className="font-semibold text-green-800">{campaign.donations_count || 0} người</span>
                       </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Tỷ lệ đạt được:</span>
+                        <span className="font-semibold text-green-800">{campaign.progress_percentage?.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-lg">
+                      <p className="text-sm text-green-700 font-medium">
+                        ✅ Trạng thái: Đã hoàn thành - Tiền đã được chuyển đến tổ chức
+                      </p>
                     </div>
                   </div>
                   
@@ -522,6 +575,98 @@ const CampaignDetails = () => {
                     <button
                       onClick={() => router.push('/campaigns')}
                       className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Xem các chiến dịch khác
+                    </button>
+                  </div>
+                </div>
+              ) : campaign.status === 'ended_partial' ? (
+                /* ⚠️ TRẠNG THÁI: ĐÃ KẾT THÚC (MỘT PHẦN) - Hết hạn nhưng có flexible funding */
+                <div className="space-y-4">
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                      <svg className="w-12 h-12 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-orange-800 mb-2">⏰ Chiến dịch đã kết thúc (Một phần)</h3>
+                    <p className="text-orange-700 mb-4">
+                      Chiến dịch đã hết hạn vào ngày {formatDate(campaign.end_date)} và đạt được một phần mục tiêu. 
+                      Do chiến dịch áp dụng chính sách linh hoạt, số tiền quyên góp sẽ được chuyển đến tổ chức.
+                    </p>
+                    <div className="bg-white rounded-lg p-4 border border-orange-200">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Đã quyên góp được:</span>
+                        <span className="font-semibold text-orange-800">{formatCurrency(campaign.current_amount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Mục tiêu ban đầu:</span>
+                        <span className="font-semibold text-gray-600">{formatCurrency(campaign.target_amount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Tỷ lệ đạt được:</span>
+                        <span className="font-semibold text-orange-800">{campaign.progress_percentage?.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-orange-100 border border-orange-300 rounded-lg">
+                      <p className="text-sm text-orange-700 font-medium">
+                        ⚠️ Trạng thái: Đã kết thúc - Tiền sẽ được chuyển đến tổ chức
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push('/campaigns')}
+                      className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      Xem các chiến dịch khác
+                    </button>
+                  </div>
+                </div>
+              ) : campaign.status === 'ended_failed' ? (
+                /* ❌ TRẠNG THÁI: ĐÃ KẾT THÚC (THẤT BẠI) - Hết hạn và không đủ target, hoàn tiền */
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                      <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-red-800 mb-2">❌ Chiến dịch đã kết thúc</h3>
+                    <p className="text-red-700 mb-4">
+                      Chiến dịch đã hết hạn vào ngày {formatDate(campaign.end_date)} mà chưa đạt được mục tiêu quyên góp. 
+                      Theo chính sách của chiến dịch, toàn bộ số tiền đã quyên góp sẽ được hoàn lại vào ví của các nhà tài trợ.
+                    </p>
+                    <div className="bg-white rounded-lg p-4 border border-red-200">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Đã quyên góp được:</span>
+                        <span className="font-semibold text-red-800">{formatCurrency(campaign.current_amount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Mục tiêu cần đạt:</span>
+                        <span className="font-semibold text-gray-600">{formatCurrency(campaign.target_amount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Tỷ lệ đạt được:</span>
+                        <span className="font-semibold text-red-800">{campaign.progress_percentage?.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-600">Còn thiếu:</span>
+                        <span className="font-semibold text-red-600">{formatCurrency(campaign.target_amount - campaign.current_amount)}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                      <p className="text-sm text-red-700 font-medium">
+                        💰 Trạng thái: Đã kết thúc - Tiền sẽ được hoàn lại vào ví của bạn
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push('/campaigns')}
+                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                     >
                       Xem các chiến dịch khác
                     </button>
@@ -720,8 +865,29 @@ const CampaignDetails = () => {
                 console.log('Payment confirmed, showing certificate');
                 setShowVietQR(false);
                 setShowCertificate(true);
-                // Show success toast
-                toast.success('Quyên góp thành công! Cảm ơn bạn đã đóng góp');
+                // Show success toast with enhanced styling
+                toast.success('Quyên góp thành công! 🎉', {
+                  duration: 5000,
+                  style: {
+                    borderLeft: '4px solid #10b981',
+                    padding: '16px',
+                    fontSize: '16px',
+                  },
+                  icon: '❤️',
+                });
+                
+                // Show follow-up message
+                setTimeout(() => {
+                  toast('Cảm ơn bạn đã đóng góp vào chiến dịch này! Sự hỗ trợ của bạn có ý nghĩa rất lớn.', {
+                    duration: 6000,
+                    style: {
+                      borderLeft: '4px solid #f97316',
+                      backgroundColor: '#fff7ed',
+                      padding: '16px',
+                    },
+                    icon: '🙏',
+                  });
+                }, 1500);
                 
                 // Refresh campaign data
                 if (slug) {

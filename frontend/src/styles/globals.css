@@ -216,6 +216,17 @@ body {
   }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes pulse-soft {
   0%, 100% {
     opacity: 1;
@@ -231,6 +242,17 @@ body {
   }
   100% {
     background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes zoom-in-95 {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -286,6 +308,23 @@ body {
   animation: slideInFromBottom 0.6s ease-out both;
 }
 
+.animate-slideUp {
+  animation: slideUp 0.5s ease-out;
+}
+
+/* Animation utilities for notifications and modals */
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in-95;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -303,6 +342,45 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(to bottom, #ea580c, #dc2626);
+}
+
+/* Scrollbar Hide Utility */
+.scrollbar-hide {
+  /* IE và Edge */
+  -ms-overflow-style: none;
+  /* Firefox */
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  /* Safari và Chrome */
+  display: none;
+}
+
+/* Custom horizontal scroll styling */
+.horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding-bottom: 1rem;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* Enhanced focus styles */

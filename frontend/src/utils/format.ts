@@ -1,13 +1,13 @@
 export function formatCurrency(amount: number): string {
-  // Handle edge cases
-  if (isNaN(amount) || amount < 0) return '0 VNĐ';
+  // Handle edge cases - NaN, Infinity, null, undefined, and negative values
+  if (isNaN(amount) || !isFinite(amount) || amount == null || amount < 0) return '0 VNĐ';
   
   return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
 }
 
 export function formatCurrencyShort(amount: number): string {
-  // Handle edge cases
-  if (isNaN(amount) || amount < 0) return '0đ';
+  // Handle edge cases - NaN, Infinity, null, undefined, and negative values
+  if (isNaN(amount) || !isFinite(amount) || amount == null || amount < 0) return '0đ';
   
   // For very large amounts, use abbreviated format
   if (amount >= 1000000000) {
@@ -22,7 +22,8 @@ export function formatCurrencyShort(amount: number): string {
 }
 
 export function formatCurrencyDetailed(amount: number): string {
-  if (isNaN(amount) || amount < 0) return '0đ';
+  // Handle edge cases - NaN, Infinity, null, undefined, and negative values
+  if (isNaN(amount) || !isFinite(amount) || amount == null || amount < 0) return '0đ';
   return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
 }
 

@@ -169,7 +169,11 @@ export default function UserDonationsPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Chiến dịch ủng hộ</p>
                 <p className="text-2xl font-bold text-gray-900">
+<<<<<<< HEAD
+                  {new Set(donations.filter(d => d.campaign).map(d => d.campaign.id)).size}
+=======
                   {new Set(donations.map(d => d.campaign.id)).size}
+>>>>>>> origin/main
                 </p>
               </div>
             </div>
@@ -226,12 +230,27 @@ export default function UserDonationsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
+<<<<<<< HEAD
+                        {donation.campaign ? (
+                          <a
+                            href={`/campaigns/${donation.campaign.slug}`}
+                            className="text-lg font-medium text-gray-900 hover:text-orange-600 transition-colors"
+                          >
+                            {donation.campaign.title}
+                          </a>
+                        ) : (
+                          <span className="text-lg font-medium text-gray-500">
+                            Campaign không tồn tại
+                          </span>
+                        )}
+=======
                         <a
                           href={`/campaigns/${donation.campaign.slug}`}
                           className="text-lg font-medium text-gray-900 hover:text-orange-600 transition-colors"
                         >
                           {donation.campaign.title}
                         </a>
+>>>>>>> origin/main
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(donation.status)}`}>
                           {getStatusName(donation.status)}
                         </span>

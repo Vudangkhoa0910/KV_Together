@@ -24,9 +24,15 @@ export interface Campaign {
   images: string[];
   image_url: string | null;
   images_url: string[];
-  status: 'draft' | 'pending' | 'active' | 'rejected' | 'completed' | 'cancelled';
+  status: 'draft' | 'pending' | 'active' | 'rejected' | 'completed' | 'cancelled' | 'ended_partial' | 'ended_failed';
   rejection_reason?: string;
   is_featured: boolean;
+  // Deletion fields
+  deletion_requested?: boolean;
+  deletion_reason?: string;
+  deletion_requested_at?: string;
+  deletion_status?: 'pending' | 'approved' | 'rejected';
+  deletion_admin_note?: string;
   organizer: {
     id: number;
     name: string;
@@ -265,6 +271,7 @@ export const api = {
     sort?: string;
     search?: string;
     page?: number;
+    per_page?: number;
   } = {}): Promise<{
     data: Campaign[];
     meta: {
@@ -287,6 +294,17 @@ export const api = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch featured campaigns');
+    }
+  },
+
+  async getPopularCampaigns(type: 'donations' | 'random' = 'donations', limit: number = 5): Promise<Campaign[]> {
+    try {
+      const response = await axiosInstance.get('/campaigns/popular', {
+        params: { type, limit }
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch popular campaigns');
     }
   },
 
@@ -318,6 +336,7 @@ export const api = {
   async getStats(): Promise<Stats> {
     try {
       const response = await axiosInstance.get('/stats');
+      console.log('Stats API response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching stats:', error);
@@ -783,6 +802,112 @@ export const api = {
     }
   },
 
+  async createCampaign(data: FormData): Promise<Campaign> {
+    try {
+      const response = await axiosInstance.post('/campaigns', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  async updateCampaign(slug: string, data: FormData | Partial<{
+    title: string;
+    description: string;
+    content: string;
+    target_amount: number;
+    end_date: string;
+    category_id: number;
+    organizer_name?: string;
+    organizer_contact?: string;
+    image?: File;
+    images?: File[];
+    is_featured?: boolean;
+    status?: string;
+  }>): Promise<Campaign> {
+    try {
+      let formData: FormData;
+      
+      if (data instanceof FormData) {
+        formData = data;
+        formData.append('_method', 'PUT');
+      } else {
+        formData = new FormData();
+        formData.append('_method', 'PUT');
+        
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined) {
+            if (value instanceof File) {
+              formData.append(key, value);
+            } else if (Array.isArray(value) && value.length > 0 && value[0] instanceof File) {
+              value.forEach((file, index) => {
+                formData.append(`${key}[${index}]`, file);
+              });
+            } else {
+              formData.append(key, value.toString());
+            }
+          }
+        });
+      }
+
+      const response = await axiosInstance.put(`/campaigns/${slug}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  async deleteCampaign(slug: string): Promise<void> {
+    try {
+      await axiosInstance.delete(`/campaigns/${slug}`);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to delete campaign');
+    }
+  },
+
+  async getFundraiserCampaigns(params: {
+    status?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+    search?: string;
+    page?: number;
+    per_page?: number;
+  } = {}): Promise<{
+    data: Campaign[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    from: number;
+    to: number;
+    per_page: number;
+  }> {
+    try {
+      const response = await axiosInstance.get('/fundraiser/campaigns', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch fundraiser campaigns');
+    }
+  },
+
+  async requestCampaignDeletion(slug: string, reason: string): Promise<{message: string, data?: any}> {
+    try {
+      const response = await axiosInstance.post(`/campaigns/${slug}/request-deletion`, {
+        reason
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to request campaign deletion');
+    }
+  },
+
   async getCompletedCampaigns(params: {
     category?: string;
     sort?: string;
@@ -824,13 +949,109 @@ export const api = {
       throw new Error(error.response?.data?.message || 'Failed to fetch user donations');
     }
   },
+<<<<<<< HEAD
+
+  // User Profile
+  async updateProfile(data: {
+    name: string;
+    phone?: string;
+    address?: string;
+    bio?: string;
+    avatar?: File;
+  }): Promise<any> {
+    try {
+      const formData = new FormData();
+      formData.append('name', data.name);
+      if (data.phone) formData.append('phone', data.phone);
+      if (data.address) formData.append('address', data.address);
+      if (data.bio) formData.append('bio', data.bio);
+      if (data.avatar) formData.append('avatar', data.avatar);
+
+      const response = await axiosInstance.put('/user/profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update profile');
+    }
+  },
+
+  async changePassword(data: {
+    current_password: string;
+    new_password: string;
+    new_password_confirmation: string;
+  }): Promise<any> {
+    try {
+      const response = await axiosInstance.put('/user/password', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to change password');
+    }
+  },
+
+  // Activity Registrations
+  async getActivityRegistrations(params: {
+    page?: number;
+    status?: 'pending' | 'confirmed' | 'cancelled';
+  } = {}): Promise<{
+    data: any[];
+    meta: {
+      current_page: number;
+      last_page: number;
+      total: number;
+    };
+  }> {
+    try {
+      const response = await axiosInstance.get('/activity-registrations', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch activity registrations');
+    }
+  },
+
+  async cancelActivityRegistration(registrationId: number): Promise<void> {
+    try {
+      await axiosInstance.patch(`/activity-registrations/${registrationId}/cancel`);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to cancel activity registration');
+    }
+  },
+
+  async registerForActivity(activityId: number, data: { notes?: string } = {}): Promise<any> {
+    try {
+      const response = await axiosInstance.post(`/activity-registrations/activities/${activityId}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to register for activity');
+    }
+  },
+
+  // Utility methods for direct API calls
+  get: (url: string, config?: any) => axiosInstance.get(url, config),
+  post: (url: string, data?: any, config?: any) => axiosInstance.post(url, data, config),
+  put: (url: string, data?: any, config?: any) => axiosInstance.put(url, data, config),
+  patch: (url: string, data?: any, config?: any) => axiosInstance.patch(url, data, config),
+  delete: (url: string, config?: any) => axiosInstance.delete(url, config),
+=======
+>>>>>>> origin/main
 };
 
 // Admin API functions
 export const adminApi = {
   // Dashboard
   getStats: () => axiosInstance.get('/admin/stats'),
+<<<<<<< HEAD
+  getActivities: () => axiosInstance.get('/admin/recent-activities'),
+  getPendingApprovals: () => axiosInstance.get('/admin/pending-approvals'),
+  
+  // Quick approvals
+  quickApproveFundraiser: (id: number) => axiosInstance.post(`/admin/quick-approve-fundraiser/${id}`),
+  quickApproveCampaign: (id: number) => axiosInstance.post(`/admin/quick-approve-campaign/${id}`),
+=======
   getActivities: () => axiosInstance.get('/admin/activities'),
+>>>>>>> origin/main
   
   // Users
   getUsers: (params?: {
@@ -840,6 +1061,13 @@ export const adminApi = {
     page?: number;
   }) => axiosInstance.get('/admin/users', { params }),
   
+<<<<<<< HEAD
+  createUser: (data: any) => axiosInstance.post('/admin/users', data),
+  updateUser: (id: number, data: any) => axiosInstance.put(`/admin/users/${id}`, data),
+  deleteUser: (id: number) => axiosInstance.delete(`/admin/users/${id}`),
+  
+=======
+>>>>>>> origin/main
   approveUser: (id: number) => axiosInstance.post(`/admin/users/${id}/approve`),
   suspendUser: (id: number) => axiosInstance.post(`/admin/users/${id}/suspend`),
   updateUserRole: (id: number, roleId: number) => 
@@ -853,10 +1081,36 @@ export const adminApi = {
     page?: number;
   }) => axiosInstance.get('/admin/campaigns', { params }),
   
+<<<<<<< HEAD
+  createCampaign: (data: any) => axiosInstance.post('/admin/campaigns', data),
+  updateCampaign: (id: number, data: any) => axiosInstance.put(`/admin/campaigns/${id}`, data),
+  deleteCampaign: (id: number) => axiosInstance.delete(`/admin/campaigns/${id}`),
+  
+=======
+>>>>>>> origin/main
   approveCampaign: (id: number) => axiosInstance.post(`/admin/campaigns/${id}/approve`),
   rejectCampaign: (id: number, reason?: string) => 
     axiosInstance.post(`/admin/campaigns/${id}/reject`, { reason }),
   
+<<<<<<< HEAD
+  // Activities  
+  getAdminActivities: (params?: {
+    status?: string;
+    category?: string;
+    search?: string;
+    page?: number;
+  }) => axiosInstance.get('/admin/activities', { params }),
+  
+  createActivity: (data: any) => axiosInstance.post('/admin/activities', data),
+  updateActivity: (id: number, data: any) => axiosInstance.put(`/admin/activities/${id}`, data),
+  deleteActivity: (id: number) => axiosInstance.delete(`/admin/activities/${id}`),
+  
+  approveActivity: (id: number) => axiosInstance.post(`/admin/activities/${id}/approve`),
+  rejectActivity: (id: number, reason?: string) => 
+    axiosInstance.post(`/admin/activities/${id}/reject`, { reason }),
+
+=======
+>>>>>>> origin/main
   // News
   getNews: (params?: {
     status?: string;
@@ -865,6 +1119,19 @@ export const adminApi = {
     page?: number;
   }) => axiosInstance.get('/admin/news', { params }),
   
+<<<<<<< HEAD
+  createNews: (data: any) => axiosInstance.post('/admin/news', data),
+  updateNews: (id: number, data: any) => axiosInstance.put(`/admin/news/${id}`, data),
+  deleteNews: (id: number) => axiosInstance.delete(`/admin/news/${id}`),
+  
+  publishNews: (id: number) => axiosInstance.post(`/admin/news/${id}/publish`),
+  archiveNews: (id: number) => axiosInstance.post(`/admin/news/${id}/archive`),
+
+  // Donations
+  getDonations: (params?: {
+    status?: string;
+    payment_method?: string;
+=======
   publishNews: (id: number) => axiosInstance.post(`/admin/news/${id}/publish`),
   archiveNews: (id: number) => axiosInstance.post(`/admin/news/${id}/archive`),
   deleteNews: (id: number) => axiosInstance.delete(`/admin/news/${id}`),
@@ -872,15 +1139,32 @@ export const adminApi = {
   // Donations
   getDonations: (params?: {
     status?: string;
+>>>>>>> origin/main
     search?: string;
     page?: number;
   }) => axiosInstance.get('/admin/donations', { params }),
   
+<<<<<<< HEAD
+  updateDonationStatus: (id: number, status: string) => 
+    axiosInstance.put(`/admin/donations/${id}/status`, { status }),
+  
+  refundDonation: (id: number, reason?: string) => 
+    axiosInstance.post(`/admin/donations/${id}/refund`, { reason }),
+  
+=======
+>>>>>>> origin/main
   // Analytics
   getAnalytics: (params?: {
     start_date?: string;
     end_date?: string;
   }) => axiosInstance.get('/admin/analytics', { params }),
+<<<<<<< HEAD
+
+  // Settings
+  getSettings: () => axiosInstance.get('/admin/settings'),
+  updateSettings: (settings: any) => axiosInstance.put('/admin/settings', settings),
+=======
+>>>>>>> origin/main
 };
 
 // Wallet API functions
@@ -900,4 +1184,21 @@ export const walletApi = {
     axiosInstance.post('/wallet/use-credits', data),
   transferCredits: (data: { recipient_email: string; amount: number; message?: string }) => 
     axiosInstance.post('/wallet/transfer', data),
+<<<<<<< HEAD
 };
+
+// Export individual functions for easier import
+export const { 
+  createCampaign, 
+  updateCampaign, 
+  deleteCampaign,
+  getFundraiserCampaigns,
+  requestCampaignDeletion,
+  getActivities,
+  createActivity,
+  updateActivity,
+  deleteActivity
+} = api;
+=======
+};
+>>>>>>> origin/main

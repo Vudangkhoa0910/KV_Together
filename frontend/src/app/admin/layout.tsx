@@ -3,9 +3,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+<<<<<<< HEAD
+=======
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DevTokenSetter from '@/components/DevTokenSetter';
+>>>>>>> origin/main
 
 export default function AdminLayout({
   children,
@@ -18,7 +21,11 @@ export default function AdminLayout({
   useEffect(() => {
     if (!loading) {
       if (!isAuthenticated || !user) {
+<<<<<<< HEAD
+        router.push('/auth/login?redirect=/super-admin');
+=======
         router.push('/auth/login');
+>>>>>>> origin/main
         return;
       }
       
@@ -26,6 +33,12 @@ export default function AdminLayout({
         router.push('/unauthorized');
         return;
       }
+<<<<<<< HEAD
+
+      // Redirect to new super admin dashboard
+      router.push('/super-admin');
+=======
+>>>>>>> origin/main
     }
   }, [user, isAuthenticated, loading, router]);
 
@@ -37,6 +50,10 @@ export default function AdminLayout({
     );
   }
 
+<<<<<<< HEAD
+  // This admin route is deprecated - redirect to super-admin
+  return null;
+=======
   if (!isAuthenticated || !user || user.role?.slug !== 'admin') {
     return null;
   }
@@ -63,4 +80,5 @@ export default function AdminLayout({
       </div>
     </div>
   );
+>>>>>>> origin/main
 }

@@ -30,6 +30,8 @@ const CampaignsPage = () => {
         ]);
         setCategories(categoriesData);
         setStats(statsData);
+        console.log('Categories loaded:', categoriesData);
+        console.log('Stats loaded:', statsData);
       } catch (err) {
         console.error('Failed to load initial data:', err);
       }
@@ -56,6 +58,7 @@ const CampaignsPage = () => {
           sort: sortBy,
           page: currentPage,
           search: searchQuery,
+          per_page: 9, // Hiển thị 9 chiến dịch mỗi trang
         };
         console.log('Loading campaigns with params:', params);
         const { data, meta } = await api.getCampaigns(params);
@@ -97,6 +100,12 @@ const CampaignsPage = () => {
               className="px-6 py-3 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 font-medium transition-all duration-200"
             >
               Đã hoàn thành
+            </Link>
+            <Link 
+              href="/campaigns/ended"
+              className="px-6 py-3 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 font-medium transition-all duration-200"
+            >
+              <span className="text-red-600">Đã kết thúc</span>
             </Link>
           </div>
         </div>
@@ -175,15 +184,22 @@ const CampaignsPage = () => {
               </label>
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  console.log('Category filter changed:', e.target.value);
+                  setSelectedCategory(e.target.value);
+                  setCurrentPage(1); // Reset to first page when filter changes
+                }}
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all duration-300 bg-white/50 backdrop-blur-sm text-gray-700 font-medium"
               >
                 <option value="all">Tất cả danh mục</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
+                {categories.map((category) => {
+                  console.log('Rendering category option:', category);
+                  return (
+                    <option key={category.id} value={category.slug}>
+                      {category.name}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             

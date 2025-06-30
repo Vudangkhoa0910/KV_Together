@@ -43,7 +43,8 @@ export const MENU_ITEMS: MenuItems = {
         title: 'Tình trạng',
         items: [
           { label: 'Đang hoạt động', href: '/campaigns' },
-          { label: 'Đã hoàn thành', href: '/campaigns/completed' }
+          { label: 'Đã hoàn thành', href: '/campaigns/completed' },
+          { label: 'Đã kết thúc', href: '/campaigns/ended' }
         ]
       },
       {
@@ -101,8 +102,7 @@ export const MENU_ITEMS: MenuItems = {
       {
         title: 'Tham gia',
         items: [
-          { label: 'Hoạt động của tôi', href: '/user/activities', requireAuth: true },
-          { label: 'Tạo hoạt động mới', href: '/activities/create', requireAuth: true, requireRole: 'fundraiser' }
+          { label: 'Hoạt động đã đăng ký', href: '/user/activity-registrations', requireAuth: true }
         ]
       }
     ]
@@ -111,28 +111,10 @@ export const MENU_ITEMS: MenuItems = {
     title: 'Về chúng tôi',
     sections: [
       {
-        title: 'Giới thiệu',
-        items: [
-          { label: 'Câu chuyện', href: '/about/story' },
-          { label: 'Sứ mệnh', href: '/about/mission' },
-          { label: 'Đội ngũ', href: '/about/team' },
-          { label: 'Đối tác', href: '/about/partners' }
-        ]
-      },
-      {
         title: 'Minh bạch',
         items: [
-          { label: 'Báo cáo tài chính', href: '/about/reports' },
-          { label: 'Báo cáo tác động', href: '/about/impact' },
+          { label: 'Báo cáo tài chính', href: '/financial-transparency' },
           { label: 'Pháp lý', href: '/about/legal' }
-        ]
-      },
-      {
-        title: 'Liên hệ',
-        items: [
-          { label: 'Thông tin liên hệ', href: '/about/contact' },
-          { label: 'Hỗ trợ', href: '/about/support' },
-          { label: 'Cơ hội việc làm', href: '/about/careers' }
         ]
       }
     ]

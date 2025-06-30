@@ -23,8 +23,19 @@ export default function FundraiserNews() {
   const fetchNews = async () => {
     try {
       setIsLoading(true);
-      const response = await api.getNews({ author_id: 'me' });
-      setNews(response.data);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/news`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch news');
+      }
+      
+      const data = await response.json();
+      setNews(data.data);
     } catch (error) {
       console.error('Error fetching news:', error);
     } finally {
@@ -147,8 +158,11 @@ export default function FundraiserNews() {
                       {article.image && (
                         <img 
                           className="h-10 w-10 rounded object-cover mr-3" 
-                          src={article.image} 
+                          src={`http://localhost:8000/storage/${article.image}`} 
                           alt="" 
+                          onError={(e) => {
+                            e.currentTarget.src = '/images/placeholder.jpg';
+                          }}
                         />
                       )}
                       <div>

@@ -13,6 +13,14 @@ class Campaign extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
     protected $fillable = [
         'title',
         'slug',
@@ -34,6 +42,15 @@ class Campaign extends Model
         'organizer_id',
         'rejection_reason',
         'is_featured',
+<<<<<<< HEAD
+        // Deletion fields
+        'deletion_requested',
+        'deletion_reason',
+        'deletion_requested_at',
+        'deletion_status',
+        'deletion_admin_note',
+=======
+>>>>>>> origin/main
         // Funding policies
         'funding_type',
         'minimum_goal',
@@ -45,10 +62,15 @@ class Campaign extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'deletion_requested_at' => 'datetime',
         'target_amount' => 'decimal:2',
         'current_amount' => 'decimal:2',
         'minimum_goal' => 'decimal:2',
         'is_featured' => 'boolean',
+<<<<<<< HEAD
+        'deletion_requested' => 'boolean',
+=======
+>>>>>>> origin/main
         'auto_disburse' => 'boolean',
         'accepts_credits' => 'boolean',
         'images' => 'json'
@@ -73,7 +95,7 @@ class Campaign extends Model
     }
 
     protected $with = ['categories', 'organizer'];
-    protected $appends = ['progress_percentage', 'days_remaining', 'image_url', 'images_url'];
+    protected $appends = ['progress_percentage', 'days_remaining', 'image_url', 'images_url', 'donations_count'];
     protected $dates = ['start_date', 'end_date'];
 
     public function categories()
@@ -127,18 +149,23 @@ class Campaign extends Model
         return max(0, now()->diffInDays($this->end_date, false));
     }
 
+    public function getDonationsCountAttribute(): int
+    {
+        return $this->donations()->count();
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active' && 
-               $this->end_date > now();
-               // Bỏ điều kiện current_amount < target_amount để cho phép chiến dịch tiếp tục nhận tiền
+               $this->end_date > now() &&
+               $this->current_amount < $this->target_amount; // Dừng nhận tiền khi đủ target
     }
 
     public function scopeActive($query)
     {
         return $query->where('status', 'active')
-                    ->where('end_date', '>', now());
-                    // Bỏ điều kiện current_amount < target_amount
+                    ->where('end_date', '>', now())
+                    ->where('current_amount', '<', 'target_amount'); // Chỉ lấy chiến dịch chưa đủ target
     }
 
     public function scopeFeatured($query)
@@ -169,20 +196,120 @@ class Campaign extends Model
     }
 
     /**
-     * Get display status for frontend
+     * Get detailed status for frontend with proper logic
      */
-    public function getDisplayStatus(): string
+    public function getDetailedStatus(): array
     {
-        // Chiến dịch hoàn thành nếu:
-        // 1. Status = completed (được đánh dấu thủ công hoặc đạt đủ số tiền), HOẶC
-        // 2. Đã hết thời gian (end_date <= now)
-        if ($this->status === 'completed' || 
-            $this->current_amount >= $this->target_amount ||
-            ($this->status === 'active' && $this->end_date <= now())) {
-            return 'completed';
+        $now = now();
+        $isExpired = $this->end_date <= $now;
+        $targetReached = $this->current_amount >= $this->target_amount;
+        $hasMinimumGoal = $this->minimum_goal && $this->current_amount >= $this->minimum_goal;
+
+        // 0. Ưu tiên status đã được set trong database
+        if ($this->status === 'completed') {
+            return [
+                'status' => 'completed',
+                'label' => 'Hoàn thành',
+                'description' => 'Chiến dịch đã đạt đủ mục tiêu quyên góp',
+                'color' => 'green',
+                'can_donate' => false,
+                'requires_action' => false
+            ];
         }
-        
-        return $this->status; // active, pending, rejected, draft
+
+        if ($this->status === 'ended_failed') {
+            return [
+                'status' => 'ended_failed',
+                'label' => 'Đã kết thúc (thất bại)',
+                'description' => 'Chiến dịch không đạt mục tiêu, tiền sẽ được hoàn lại',
+                'color' => 'red',
+                'can_donate' => false,
+                'requires_action' => true
+            ];
+        }
+
+        if ($this->status === 'ended_partial') {
+            return [
+                'status' => 'ended_partial',
+                'label' => 'Đã kết thúc (một phần)',
+                'description' => 'Chiến dịch đã kết thúc, tiền sẽ được chuyển cho tổ chức',
+                'color' => 'orange',
+                'can_donate' => false,
+                'requires_action' => true
+            ];
+        }
+
+        // 1. Logic tự động: Hoàn thành CHỈ KHI current_amount >= target_amount (bất kể thời gian)
+        if ($targetReached) {
+            return [
+                'status' => 'completed',
+                'label' => 'Hoàn thành',
+                'description' => 'Chiến dịch đã đạt đủ mục tiêu quyên góp',
+                'color' => 'green',
+                'can_donate' => false,
+                'requires_action' => false
+            ];
+        }
+
+        // 2. Đang hoạt động: Chưa đủ target và chưa hết thời gian
+        if (!$isExpired && $this->status === 'active') {
+            return [
+                'status' => 'active',
+                'label' => 'Đang hoạt động',
+                'description' => 'Chiến dịch đang nhận quyên góp',
+                'color' => 'blue',
+                'can_donate' => true,
+                'requires_action' => false
+            ];
+        }
+
+        // 3. Đã kết thúc: CHỈ KHI hết thời gian VÀ current_amount < target_amount
+        if ($isExpired && !$targetReached) {
+            // 3a. Flexible funding - có thể giữ tiền
+            if ($this->funding_type === self::FUNDING_FLEXIBLE || $hasMinimumGoal) {
+                return [
+                    'status' => 'ended_partial',
+                    'label' => 'Đã kết thúc (một phần)',
+                    'description' => 'Chiến dịch đã kết thúc, tiền sẽ được chuyển cho tổ chức',
+                    'color' => 'orange',
+                    'can_donate' => false,
+                    'requires_action' => true // Cần xử lý chuyển tiền
+                ];
+            }
+            // 3b. All-or-nothing funding - cần hoàn tiền
+            else {
+                return [
+                    'status' => 'ended_failed',
+                    'label' => 'Đã kết thúc (thất bại)',
+                    'description' => 'Chiến dịch không đạt mục tiêu, tiền sẽ được hoàn lại',
+                    'color' => 'red',
+                    'can_donate' => false,
+                    'requires_action' => true // Cần xử lý hoàn tiền
+                ];
+            }
+        }
+
+        // 4. Các trạng thái khác
+        return [
+            'status' => $this->status,
+            'label' => ucfirst($this->status),
+            'description' => $this->getStatusDescription(),
+            'color' => $this->getStatusColor(),
+            'can_donate' => false,
+            'requires_action' => false
+        ];
+    }
+
+    private function getStatusDescription(): string
+    {
+        return match($this->status) {
+            'pending' => 'Chiến dịch đang chờ phê duyệt',
+            'rejected' => 'Chiến dịch đã bị từ chối',
+            'draft' => 'Chiến dịch đang soạn thảo',
+            'paused' => 'Chiến dịch tạm dừng',
+            'cancelled' => 'Chiến dịch đã bị hủy',
+            default => 'Trạng thái không xác định'
+        };
     }
 
     /**
@@ -328,4 +455,16 @@ class Campaign extends Model
     {
         return $this->creditsDonations()->where('status', 'completed')->sum('amount');
     }
+<<<<<<< HEAD
+
+    /**
+     * Get display status for frontend (legacy compatibility)
+     */
+    public function getDisplayStatus(): string
+    {
+        $detailed = $this->getDetailedStatus();
+        return $detailed['status'];
+    }
+=======
+>>>>>>> origin/main
 }

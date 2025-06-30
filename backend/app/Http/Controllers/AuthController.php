@@ -142,4 +142,52 @@ class AuthController extends Controller
             ],
         ], 201);
     }
+<<<<<<< HEAD
+
+    public function refresh(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        try {
+            // Only revoke the current token, not all tokens
+            $request->user()->currentAccessToken()->delete();
+            
+            // Create new token
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'avatar' => $user->avatar,
+                    'role' => [
+                        'id' => $user->role->id,
+                        'name' => $user->role->name,
+                        'slug' => $user->role->slug,
+                    ],
+                    'status' => $user->status,
+                    'created_at' => $user->created_at,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Token refresh failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Rate limiting token refresh'
+            ], 429);
+        }
+    }
+=======
+>>>>>>> origin/main
 }

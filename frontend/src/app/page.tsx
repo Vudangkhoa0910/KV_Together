@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { api, Campaign, Stats, Category } from "@/services/api";
@@ -5,169 +8,221 @@ import ScrollToTop from "@/components/ScrollToTop";
 import EnhancedStatsSection from "@/components/home/EnhancedStatsSection";
 import CampaignsSection from "@/components/home/CampaignsSection";
 import CategoriesSection from "@/components/home/CategoriesSection";
+import FinancialTransparencyHomeSection from "@/components/home/FinancialTransparencyHomeSection";
 import "@/styles/home-enhanced.css";
 
-async function getFeaturedCampaigns(): Promise<Campaign[]> {
-  try {
-    return await api.getFeaturedCampaigns();
-  } catch (error) {
-    console.error('Error fetching featured campaigns:', error);
-    // Return placeholder data
-    return [
-      {
-        id: 1,
-        title: "Xây dựng trường học cho trẻ em vùng cao Sapa",
-        slug: "xay-dung-truong-hoc-sapa",
-        description: "Hỗ trợ xây dựng trường học cho 200 em nhỏ tại vùng cao Sapa, Lào Cai",
-        content: "Dự án này nhằm xây dựng một ngôi trường học hiện đại với đầy đủ trang thiết bị học tập cho các em nhỏ tại vùng cao Sapa. Trường sẽ có 6 phòng học, 1 thư viện và sân chơi an toàn.",
-        target_amount: 500000000,
-        current_amount: 385000000,
-        start_date: "2024-01-15T00:00:00Z",
-        end_date: "2024-12-31T00:00:00Z",
-        image: "/images/bg_2.jpg",
-        images: ["/images/bg_2.jpg", "/images/bg_3.jpg"],
-        image_url: "/images/bg_2.jpg",
-        images_url: ["/images/bg_2.jpg", "/images/bg_3.jpg"],
-        status: "active" as const,
-        is_featured: true,
-        organizer: {
-          id: 1,
-          name: "Quỹ từ thiện Ánh Sáng",
-          email: "anhsang@charity.org",
-          avatar_url: "/images/bg.jpeg",
-          bio: "Tổ chức từ thiện hoạt động 10 năm trong lĩnh vực giáo dục",
-          fundraiser_type: "organization"
-        },
-        categories: [
-          { id: 1, name: "Giáo dục", slug: "giao-duc", description: "Các dự án về giáo dục", icon: "📚" },
-          { id: 2, name: "Trẻ em", slug: "tre-em", description: "Hỗ trợ trẻ em", icon: "👶" }
-        ],
-        progress_percentage: 77,
-        days_remaining: 45,
-        created_at: "2024-01-15T00:00:00Z",
-        updated_at: "2024-06-10T00:00:00Z",
-        donations_count: 324
-      },
-      {
-        id: 2,
-        title: "Phẫu thuật tim cho em bé Minh An",
-        slug: "phau-thuat-tim-minh-an",
-        description: "Cứu em bé 3 tuổi mắc bệnh tim bẩm sinh cần phẫu thuật khẩn cấp",
-        content: "Em Minh An, 3 tuổi, mắc bệnh tim bẩm sinh nghiêm trọng cần phẫu thuật ngay. Gia đình em thuộc diện khó khăn, không đủ khả năng chi trả chi phí điều trị lên đến 120 triệu đồng.",
-        target_amount: 120000000,
-        current_amount: 95000000,
-        start_date: "2024-05-01T00:00:00Z",
-        end_date: "2024-07-31T00:00:00Z",
-        image: "/images/bg_3.jpg",
-        images: ["/images/bg_3.jpg"],
-        image_url: "/images/bg_3.jpg",
-        images_url: ["/images/bg_3.jpg"],
-        status: "active" as const,
-        is_featured: true,
-        organizer: {
-          id: 2,
-          name: "Bệnh viện Nhi Trung ương",
-          email: "contact@bvnhi.org",
-          avatar_url: "/images/bg_2.jpg",
-          bio: "Bệnh viện chuyên khoa nhi hàng đầu Việt Nam",
-          fundraiser_type: "organization"
-        },
-        categories: [
-          { id: 3, name: "Y tế", slug: "y-te", description: "Các dự án y tế", icon: "🏥" },
-          { id: 2, name: "Trẻ em", slug: "tre-em", description: "Hỗ trợ trẻ em", icon: "👶" }
-        ],
-        progress_percentage: 79,
-        days_remaining: 15,
-        created_at: "2024-05-01T00:00:00Z",
-        updated_at: "2024-06-12T00:00:00Z",
-        donations_count: 567,
-        urgency_level: "critical" as const,
-        time_left: 15
-      },
-      {
-        id: 3,
-        title: "Hỗ trợ người cao tuổi neo đơn",
-        slug: "ho-tro-nguoi-cao-tuoi",
-        description: "Chương trình chăm sóc và hỗ trợ người cao tuổi cô đơn tại TP.HCM",
-        content: "Dự án nhằm hỗ trợ 100 người cao tuổi neo đơn tại TP.HCM với các gói chăm sóc sức khỏe, dinh dưỡng và tinh thần. Mỗi tháng sẽ có các hoạt động thăm hỏi, khám sức khỏe định kỳ.",
-        target_amount: 300000000,
-        current_amount: 245000000,
-        start_date: "2024-03-01T00:00:00Z",
-        end_date: "2024-12-31T00:00:00Z",
-        image: "/images/bg.jpeg",
-        images: ["/images/bg.jpeg"],
-        image_url: "/images/bg.jpeg",
-        images_url: ["/images/bg.jpeg"],
-        status: "active" as const,
-        is_featured: true,
-        organizer: {
-          id: 3,
-          name: "Hội Chữ thập đỏ TP.HCM",
-          email: "hcm@redcross.org.vn",
-          avatar_url: "/images/bg_3.jpg",
-          bio: "Tổ chức nhân đạo uy tín với 50 năm hoạt động",
-          fundraiser_type: "organization"
-        },
-        categories: [
-          { id: 4, name: "Người già", slug: "nguoi-gia", description: "Hỗ trợ người cao tuổi", icon: "👴" },
-          { id: 5, name: "Cộng đồng", slug: "cong-dong", description: "Phát triển cộng đồng", icon: "🤝" }
-        ],
-        progress_percentage: 82,
-        days_remaining: 89,
-        created_at: "2024-03-01T00:00:00Z",
-        updated_at: "2024-06-13T00:00:00Z",
-        donations_count: 456
+// Loading component
+function LoadingCampaigns() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+          <div className="h-48 bg-gray-300"></div>
+          <div className="p-6">
+            <div className="h-4 bg-gray-300 rounded mb-3"></div>
+            <div className="h-3 bg-gray-300 rounded mb-2"></div>
+            <div className="h-3 bg-gray-300 rounded mb-4"></div>
+            <div className="h-2 bg-gray-300 rounded mb-2"></div>
+            <div className="flex justify-between">
+              <div className="h-3 bg-gray-300 rounded w-16"></div>
+              <div className="h-3 bg-gray-300 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Empty state component
+function EmptyCampaigns() {
+  return (
+    <div className="text-center py-16">
+      <div className="max-w-md mx-auto">
+        <div className="text-6xl mb-4">🎯</div>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">
+          Chưa có chiến dịch phổ biến
+        </h3>
+        <p className="text-gray-600 mb-6">
+          Hiện tại chưa có chiến dịch nào trong hệ thống. Vui lòng quay lại sau hoặc khám phá tất cả chiến dịch.
+        </p>
+        <Link 
+          href="/campaigns" 
+          className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Xem tất cả chiến dịch
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  // Initialize with empty array to show loading state first
+  const [featuredCampaigns, setFeaturedCampaigns] = useState<Campaign[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        
+        // Load data from API with priority on real data
+        const [campaignsData, statsData, categoriesData] = await Promise.all([
+          // Try to get popular campaigns with most donations first
+          api.getPopularCampaigns('donations', 5)
+            .catch(() => 
+              // Fallback to random popular campaigns if donations sort fails
+              api.getPopularCampaigns('random', 5)
+            )
+            .catch(() => 
+              // Final fallback to regular campaigns
+              api.getCampaigns({ per_page: 5 }).then(response => response.data)
+            ),
+          api.getStats().catch(err => {
+            console.error('Stats error:', err);
+            return null;
+          }),
+          api.getCategories().catch(err => {
+            console.error('Categories error:', err);
+            return [];
+          })
+        ]);
+        
+        console.log('Popular campaigns data from API:', campaignsData);
+        console.log('Stats data from API:', statsData);
+        
+        // Use popular campaigns data first
+        if (campaignsData && campaignsData.length > 0) {
+          console.log('✅ Using popular campaigns from API:', campaignsData.length);
+          setFeaturedCampaigns(campaignsData);
+        } else {
+          // If no popular campaigns, try to get any active campaigns
+          try {
+            console.log('No popular campaigns found, trying active campaigns...');
+            const allCampaigns = await api.getCampaigns({ 
+              per_page: 5
+            });
+            
+            if (allCampaigns.data && allCampaigns.data.length > 0) {
+              console.log('✅ Using active campaigns as featured:', allCampaigns.data.length);
+              setFeaturedCampaigns(allCampaigns.data);
+            } else {
+              console.log('⚠️ No campaigns found in database');
+              setFeaturedCampaigns([]);
+            }
+          } catch (error) {
+            console.error('Error fetching active campaigns:', error);
+            setFeaturedCampaigns([]);
+          }
+        }
+        
+        // Use real stats data or create fallback
+        if (statsData) {
+          console.log('✅ Using real stats data from API');
+          setStats(statsData);
+        } else {
+          console.log('⚠️ No stats data available, using reasonable fallback');
+          setStats({
+            active_campaigns: 15,
+            total_donors: 17,
+            total_amount_raised: 100561531,
+            total_campaigns: 29,
+            active_campaigns_count: 15,
+            completed_campaigns: 1,
+            pending_campaigns: 1,
+            total_donations_count: 852,
+            avg_donation_amount: 620750,
+            success_rate: 3.4,
+            this_month_donations: 77557751,
+            this_month_donors: 17,
+            completed_campaigns_amount: 200000000,
+            projects: 29,
+            ambassadors: 4,
+            organizations: 4,
+            donations_count: 852,
+            total_amount: 100561531
+          });
+        }
+        
+        setCategories(categoriesData);
+        setError(null);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError('Không thể tải dữ liệu từ server');
+        setFeaturedCampaigns([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-  }
-}
+    }
 
-async function getStats(): Promise<Stats> {
-  try {
-    return await api.getStats();
-  } catch (error) {
-    console.error('Error fetching stats:', error);
-    return {
-      active_campaigns: 45,
-      total_donors: 12500,
-      total_amount_raised: 8750000000, // 8.75 tỷ
-      total_campaigns: 67,
-      active_campaigns_count: 45,
-      completed_campaigns: 18,
-      pending_campaigns: 4,
-      total_donations_count: 12500,
-      avg_donation_amount: 700000, // 700k trung bình
-      success_rate: 92,
-      this_month_donations: 450000000, // 450 triệu tháng này
-      this_month_donors: 890,
-      projects: 45,
-      ambassadors: 156,
-      organizations: 23,
-      donations_count: 12500,
-      total_amount: 8750000000,
-    };
-  }
-}
+    loadData();
+  }, []);
 
-async function getCategories(): Promise<Category[]> {
-  try {
-    return await api.getCategories();
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
-}
+  if (loading) {
+    return (
+      <div className="home">
+        <section className="hero">
+          <div className="hero-content">
+            <h1>
+              Cùng nhau <span className="highlight">Gây quỹ</span>
+              <br />
+              Lan tỏa <span className="highlight">Yêu thương</span>
+            </h1>
+            <p>Tham gia và ủng hộ các chiến dịch ý nghĩa, giúp đỡ cộng đồng và tạo nên sự thay đổi tích cực.</p>
+            <div className="hero-buttons">
+              <Link href="/campaigns" className="btn-primary">Khám phá chiến dịch</Link>
+              <Link href="/auth/register" className="btn-secondary">Trở thành sứ giả</Link>
+            </div>
+          </div>
+          <div className="hero-image">
+            <div className="hero-image-wrapper">
+              <Image 
+                src="/images/bg.jpeg" 
+                alt="Together we make a difference"
+                width={800}
+                height={600}
+                priority
+                className="main-image"
+              />
+            </div>
+            <div className="hero-image-wrapper">
+              <Image 
+                src="/images/bg_2.jpg" 
+                alt="Community support"
+                width={800}
+                height={450}
+                priority
+              />
+            </div>
+            <div className="hero-image-wrapper">
+              <Image 
+                src="/images/bg_3.jpg" 
+                alt="Making impact"
+                width={800}
+                height={450}
+                priority
+              />
+            </div>
+          </div>
+        </section>
 
-export default async function Home() {
-  const [
-    campaigns, 
-    stats, 
-    categories
-  ] = await Promise.all([
-    getFeaturedCampaigns(),
-    getStats(),
-    getCategories()
-  ]);
+        <div className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                Chiến dịch được quan tâm nhiều nhất
+              </h2>
+            </div>
+            <LoadingCampaigns />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="home">
@@ -218,21 +273,43 @@ export default async function Home() {
       </section>
 
       {/* Enhanced Stats Section - Thống kê quan trọng */}
-      <EnhancedStatsSection stats={stats} />
+      {stats && <EnhancedStatsSection stats={stats} />}
 
-      {/* Featured Campaigns Section - Chiến dịch chính */}
-      {campaigns.length > 0 && (
+      {/* Popular Campaigns Section - Chiến dịch phổ biến */}
+      {featuredCampaigns.length > 0 ? (
         <CampaignsSection 
-          campaigns={campaigns}
-          title="Chiến dịch nổi bật"
-          subtitle="Những chiến dịch được lựa chọn đặc biệt với tác động lớn đến cộng đồng"
+          campaigns={featuredCampaigns}
+          title="Chiến dịch được quan tâm nhiều nhất"
+          subtitle="Những chiến dịch nhận được nhiều sự ủng hộ và quan tâm từ cộng đồng"
           type="featured"
         />
+      ) : (
+        !loading && <EmptyCampaigns />
       )}
 
       {/* Categories Section - Danh mục chính */}
       {categories.length > 0 && (
         <CategoriesSection categories={categories} />
+      )}
+
+      {/* Financial Transparency Section - Minh bạch tài chính */}
+      {stats && <FinancialTransparencyHomeSection stats={stats} />}
+
+      {/* Error message */}
+      {error && (
+        <div className="py-16">
+          <div className="container mx-auto px-4 text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <p className="text-red-600">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
       <ScrollToTop />

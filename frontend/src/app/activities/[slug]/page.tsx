@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
+import ActivityRegistrationButton from '@/components/activities/ActivityRegistrationButton';
 
 const CATEGORIES = {
   event: 'Sự kiện',
@@ -205,6 +206,11 @@ export default function ActivityDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* Registration Button */}
+            <div className="mb-6">
+              <ActivityRegistrationButton activity={activity} />
+            </div>
             
             {/* Contact Info */}
             {(activity.contact_email || activity.contact_phone) && (

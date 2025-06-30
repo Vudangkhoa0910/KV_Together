@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { createCampaign } from '@/services/api';
+import { toast } from 'react-hot-toast';
 import { 
   ChevronLeftIcon,
   CalendarIcon,
@@ -13,7 +15,9 @@ import {
   DocumentTextIcon,
   InformationCircleIcon,
   XCircleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 
 interface Category {
@@ -50,6 +54,7 @@ export default function CreateCampaignPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     // Fetch categories
@@ -141,19 +146,119 @@ export default function CreateCampaignPage() {
   const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Vui lòng chọn file hình ảnh (PNG, JPG, GIF)', {
+          icon: '⚠️',
+          duration: 4000,
+        });
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Kích thước file không được vượt quá 5MB', {
+          icon: '⚠️',
+          duration: 4000,
+        });
+        return;
+      }
+      
       setMainImage(file);
       setPreviewMainImage(URL.createObjectURL(file));
+      
+      // Clear error if exists
+      if (errors.mainImage) {
+        setErrors(prev => ({
+          ...prev,
+          mainImage: ''
+        }));
+      }
     }
   };
 
   const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      const newImages = [...additionalImages, ...filesArray].slice(0, 5); // Limit to 5 images
+      
+      // Validate each file
+      const validFiles = filesArray.filter(file => {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`File ${file.name} không phải là hình ảnh`, {
+            icon: '⚠️',
+            duration: 3000,
+          });
+          return false;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`File ${file.name} vượt quá 5MB`, {
+            icon: '⚠️',
+            duration: 3000,
+          });
+          return false;
+        }
+        
+        return true;
+      });
+      
+      const newImages = [...additionalImages, ...validFiles].slice(0, 5);
       setAdditionalImages(newImages);
       
       const newPreviews = newImages.map(file => URL.createObjectURL(file));
       setPreviewAdditionalImages(newPreviews);
+      
+      if (validFiles.length > 0) {
+        toast.success(`Đã thêm ${validFiles.length} hình ảnh`, {
+          icon: '✅',
+          duration: 2000,
+        });
+      }
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent, isMainImage = false) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    
+    if (isMainImage && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
+        setMainImage(file);
+        setPreviewMainImage(URL.createObjectURL(file));
+        
+        if (errors.mainImage) {
+          setErrors(prev => ({ ...prev, mainImage: '' }));
+        }
+      } else {
+        toast.error('File không hợp lệ. Vui lòng chọn hình ảnh dưới 5MB');
+      }
+    } else {
+      // Handle additional images
+      const validFiles = files.filter(file => 
+        file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024
+      );
+      
+      if (validFiles.length > 0) {
+        const newImages = [...additionalImages, ...validFiles].slice(0, 5);
+        setAdditionalImages(newImages);
+        setPreviewAdditionalImages(newImages.map(file => URL.createObjectURL(file)));
+        toast.success(`Đã thêm ${validFiles.length} hình ảnh`);
+      }
     }
   };
 
@@ -303,9 +408,16 @@ export default function CreateCampaignPage() {
       console.log("Auth token exists:", !!token);
       if (!token) {
         console.error("No authentication token found");
-        setErrors({
-          ...errors,
-          form: 'Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.'
+        toast.error('Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.', {
+          icon: '🔐',
+          duration: 5000,
+          style: {
+            background: '#EF4444',
+            color: '#fff',
+            fontWeight: '500',
+            padding: '16px',
+            borderRadius: '12px',
+          },
         });
         setIsSubmitting(false);
         return;
@@ -313,10 +425,23 @@ export default function CreateCampaignPage() {
       
       // Use the API service to create a campaign
       const { api } = await import('@/services/api');
-      const response = await api.createCampaign(formDataObj);
+      const response = await createCampaign(formDataObj);
       console.log("API response:", response);
       
       setIsSuccess(true);
+      
+      // Show success toast
+      toast.success('🎉 Chiến dịch đã được tạo thành công! Đang chuyển hướng...', {
+        duration: 3000,
+        style: {
+          background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+          color: '#fff',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '12px',
+          maxWidth: '500px',
+        },
+      });
       
       // Redirect after showing success message
       setTimeout(() => {
@@ -389,7 +514,10 @@ export default function CreateCampaignPage() {
       if (mainImage) {
         formDataObj.append('image', mainImage);
       } else {
-        alert('Vui lòng tải lên hình ảnh đại diện cho chiến dịch');
+        toast.error('Vui lòng tải lên hình ảnh đại diện cho chiến dịch', {
+          icon: '📷',
+          duration: 4000,
+        });
         return;
       }
       
@@ -406,13 +534,19 @@ export default function CreateCampaignPage() {
       
       // Call debug endpoint
       const { api } = await import('@/services/api');
-      const response = await api.debugCampaignCreation(formDataObj);
+      const response = await createCampaign(formDataObj);
       console.log("Debug response:", response);
       
-      alert('Debug information sent! Check console for details.');
+      toast.success('Debug information sent! Check console for details.', {
+        icon: '🐛',
+        duration: 3000,
+      });
     } catch (err) {
       console.error("Debug error:", err);
-      alert('Error during debug. Check console for details.');
+      toast.error('Error during debug. Check console for details.', {
+        icon: '❌',
+        duration: 3000,
+      });
     }
   };
 
@@ -437,47 +571,84 @@ export default function CreateCampaignPage() {
 
   if (isSuccess) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8 max-w-2xl mx-auto my-12 text-center">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-          <CheckCircleIcon className="h-8 w-8 text-green-600" aria-hidden="true" />
-        </div>
-        <h3 className="mt-3 text-lg font-medium text-gray-900">Chiến dịch đã được tạo thành công!</h3>
-        <p className="mt-2 text-sm text-gray-500">
-          Chiến dịch của bạn đã được gửi và đang chờ phê duyệt từ quản trị viên.
-          Bạn sẽ được thông báo khi chiến dịch được phê duyệt.
-        </p>
-        <div className="mt-5">
-          <Link href="/fundraiser/campaigns" className="text-sm font-medium text-orange-600 hover:text-orange-500">
-            Quay lại quản lý chiến dịch
-          </Link>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center transform animate-in zoom-in-95 duration-500">
+          <div className="mb-6">
+            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 mb-4 animate-bounce">
+              <CheckCircleIcon className="h-12 w-12 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              🎉 Chiến dịch đã được tạo thành công!
+            </h3>
+            <div className="w-24 h-1 bg-gradient-to-r from-orange-400 to-orange-600 mx-auto rounded-full mb-4"></div>
+          </div>
+          
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 mb-6">
+            <div className="flex items-start">
+              <ExclamationTriangleIcon className="h-6 w-6 text-orange-600 mt-1 mr-3 flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-orange-800 font-semibold mb-2">Thông tin quan trọng:</p>
+                <p className="text-orange-700 text-sm leading-relaxed">
+                  Chiến dịch của bạn đã được gửi và đang chờ phê duyệt từ quản trị viên. 
+                  Bạn sẽ nhận được thông báo qua email khi chiến dịch được phê duyệt và công khai.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link 
+              href="/fundraiser/campaigns" 
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <ChevronLeftIcon className="h-5 w-5 mr-2" />
+              Quay lại quản lý chiến dịch
+            </Link>
+            
+            <Link 
+              href="/fundraiser/campaigns/create" 
+              className="inline-flex items-center px-6 py-3 bg-white border-2 border-orange-500 text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-all duration-200"
+            >
+              Tạo chiến dịch khác
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-6">
-        <Link 
-          href="/fundraiser/campaigns" 
-          className="inline-flex items-center text-gray-600 hover:text-gray-900"
-        >
-          <ChevronLeftIcon className="h-5 w-5 mr-1" />
-          Quay lại danh sách chiến dịch
-        </Link>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-orange-500 px-6 py-4">
-          <h1 className="text-xl font-bold text-white">Tạo chiến dịch gây quỹ mới</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="mb-8">
+          <Link 
+            href="/fundraiser/campaigns" 
+            className="inline-flex items-center text-orange-600 hover:text-orange-800 font-medium transition-colors duration-200 group"
+          >
+            <ChevronLeftIcon className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
+            Quay lại quản lý chiến dịch
+          </Link>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-orange-100">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-6">
+            <div className="flex items-center">
+              <div className="p-3 bg-white bg-opacity-20 rounded-xl mr-4">
+                <DocumentTextIcon className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-1">Tạo chiến dịch gây quỹ mới</h1>
+                <p className="text-orange-100">Chia sẻ câu chuyện của bạn và kết nối với cộng đồng</p>
+              </div>
+            </div>
+          </div>          
+        <form onSubmit={handleSubmit} className="p-8 bg-gray-50">
           {errors.form && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
+            <div className="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
               <div className="flex items-center">
-                <XCircleIcon className="h-5 w-5 text-red-500 mr-2" />
-                <p className="text-sm text-red-700">{errors.form}</p>
+                <XCircleIcon className="h-6 w-6 text-red-500 mr-3" />
+                <p className="text-sm text-red-700 font-medium">{errors.form}</p>
               </div>
             </div>
           )}
@@ -603,90 +774,109 @@ export default function CreateCampaignPage() {
                   Hình ảnh
                 </h2>
                 
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700">Hình ảnh đại diện <span className="text-red-500">*</span></label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                    <div className="space-y-1 text-center">
-                      {previewMainImage ? (
-                        <div>
-                          <img src={previewMainImage} alt="Preview" className="mx-auto h-40 w-auto object-cover mb-2" />
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              setMainImage(null);
-                              setPreviewMainImage(null);
-                            }}
-                            className="mt-2 inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          >
-                            Xóa
-                          </button>
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Hình ảnh đại diện <span className="text-red-500">*</span>
+                  </label>
+                  <div 
+                    className={`relative border-2 border-dashed rounded-xl transition-all duration-300 ${
+                      isDragOver 
+                        ? 'border-orange-400 bg-orange-50' 
+                        : errors.mainImage 
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-gray-300 hover:border-orange-300 hover:bg-orange-50'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, true)}
+                  >
+                    {previewMainImage ? (
+                      <div className="relative p-4">
+                        <img 
+                          src={previewMainImage} 
+                          alt="Preview" 
+                          className="mx-auto h-48 w-auto object-cover rounded-lg shadow-md" 
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setMainImage(null);
+                            setPreviewMainImage(null);
+                          }}
+                          className="absolute top-6 right-6 p-2 bg-red-100 hover:bg-red-200 rounded-full transition-colors duration-200 shadow-lg"
+                        >
+                          <XCircleIcon className="h-5 w-5 text-red-600" />
+                        </button>
+                        <div className="mt-4 text-center">
+                          <p className="text-sm text-gray-600">
+                            {mainImage?.name} ({((mainImage?.size || 0) / 1024 / 1024).toFixed(1)}MB)
+                          </p>
                         </div>
-                      ) : (
-                        <>
-                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <div className="flex text-sm text-gray-600">
-                            <label htmlFor="main-image" className="relative cursor-pointer bg-white rounded-md font-medium text-orange-600 hover:text-orange-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-orange-500">
-                              <span>Tải lên hình ảnh</span>
-                              <input 
-                                id="main-image" 
-                                name="main-image" 
-                                type="file" 
-                                className="sr-only" 
-                                accept="image/*"
-                                onChange={handleMainImageChange}
-                                ref={fileInputRef}
-                              />
-                            </label>
-                            <p className="pl-1">hoặc kéo thả</p>
-                          </div>
-                          <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5MB</p>
-                        </>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center px-6 py-10">
+                        <CloudArrowUpIcon className={`mx-auto h-16 w-16 mb-4 ${isDragOver ? 'text-orange-500' : 'text-gray-400'} transition-colors duration-300`} />
+                        <div className="text-center">
+                          <label htmlFor="main-image" className="relative cursor-pointer bg-white rounded-md font-medium text-orange-600 hover:text-orange-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-orange-500">
+                            <span className="text-lg">Nhấn để tải lên</span>
+                            <input 
+                              id="main-image" 
+                              name="main-image" 
+                              type="file" 
+                              className="sr-only" 
+                              accept="image/*"
+                              onChange={handleMainImageChange}
+                              ref={fileInputRef}
+                            />
+                          </label>
+                          <p className="text-gray-500 ml-1">hoặc kéo thả file vào đây</p>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF tối đa 5MB</p>
+                      </div>
+                    )}
                   </div>
-                  {errors.mainImage && <p className="mt-1 text-sm text-red-600">{errors.mainImage}</p>}
+                  {errors.mainImage && <p className="mt-2 text-sm text-red-600">{errors.mainImage}</p>}
                 </div>
                 
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700">Hình ảnh bổ sung (tối đa 5 hình)</label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                    <div className="space-y-1 text-center">
-                      {previewAdditionalImages.length > 0 ? (
-                        <div>
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            {previewAdditionalImages.map((preview, index) => (
-                              <div key={index} className="relative">
-                                <img src={preview} alt={`Preview ${index + 1}`} className="h-24 w-auto object-cover" />
-                                <button
-                                  type="button"
-                                  onClick={() => removeAdditionalImage(index)}
-                                  className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1"
-                                >
-                                  <XCircleIcon className="h-4 w-4 text-red-700" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                          {previewAdditionalImages.length < 5 && (
-                            <button 
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                            >
-                              Thêm hình ảnh
-                            </button>
-                          )}
+                <div className="mt-8">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Hình ảnh bổ sung (tối đa 5 hình)
+                  </label>
+                  <div 
+                    className={`border-2 border-dashed rounded-xl transition-all duration-300 ${
+                      isDragOver 
+                        ? 'border-orange-400 bg-orange-50' 
+                        : 'border-gray-300 hover:border-orange-300 hover:bg-orange-50'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, false)}
+                  >
+                    {previewAdditionalImages.length > 0 ? (
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                          {previewAdditionalImages.map((preview, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={preview} 
+                                alt={`Preview ${index + 1}`} 
+                                className="h-32 w-full object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-200" 
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeAdditionalImage(index)}
+                                className="absolute -top-2 -right-2 p-1.5 bg-red-100 hover:bg-red-200 rounded-full shadow-lg transition-colors duration-200"
+                              >
+                                <XCircleIcon className="h-4 w-4 text-red-600" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      ) : (
-                        <>
-                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <div className="flex text-sm text-gray-600">
-                            <label htmlFor="additional-images" className="relative cursor-pointer bg-white rounded-md font-medium text-orange-600 hover:text-orange-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-orange-500">
-                              <span>Tải lên hình ảnh</span>
+                        {previewAdditionalImages.length < 5 && (
+                          <div className="text-center">
+                            <label htmlFor="additional-images" className="inline-flex items-center px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-medium rounded-lg cursor-pointer transition-colors duration-200">
+                              <PhotoIcon className="h-5 w-5 mr-2" />
+                              Thêm hình ảnh ({5 - previewAdditionalImages.length} còn lại)
                               <input 
                                 id="additional-images" 
                                 name="additional-images" 
@@ -697,12 +887,30 @@ export default function CreateCampaignPage() {
                                 multiple
                               />
                             </label>
-                            <p className="pl-1">hoặc kéo thả</p>
                           </div>
-                          <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5MB mỗi ảnh</p>
-                        </>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center px-6 py-8">
+                        <PhotoIcon className={`mx-auto h-12 w-12 mb-4 ${isDragOver ? 'text-orange-500' : 'text-gray-400'} transition-colors duration-300`} />
+                        <div className="text-center">
+                          <label htmlFor="additional-images" className="relative cursor-pointer bg-white rounded-md font-medium text-orange-600 hover:text-orange-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-orange-500">
+                            <span>Thêm hình ảnh bổ sung</span>
+                            <input 
+                              id="additional-images" 
+                              name="additional-images" 
+                              type="file" 
+                              className="sr-only" 
+                              accept="image/*"
+                              onChange={handleAdditionalImagesChange}
+                              multiple
+                            />
+                          </label>
+                          <p className="text-gray-500 ml-1">hoặc kéo thả file vào đây</p>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF tối đa 5MB mỗi ảnh</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -799,50 +1007,48 @@ export default function CreateCampaignPage() {
             </div>
           </div>
           
-          <div className="mt-8 pt-5 border-t border-gray-200 flex items-center justify-between">
-            <p className="text-xs text-gray-500">
-              <span className="text-red-500">*</span> là thông tin bắt buộc
-            </p>
-            <div className="flex items-center space-x-3">
-              <Link 
-                href="/fundraiser/campaigns"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-              >
-                Hủy
-              </Link>
+          <div className="mt-10 pt-8 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-gray-500 flex items-center">
+                <span className="text-red-500 text-base mr-1">*</span> 
+                Các thông tin bắt buộc
+              </p>
               
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Đang xử lý...
-                  </>
-                ) : 'Tạo chiến dịch'}
-              </button>
+              <div className="flex items-center space-x-4">
+                <Link 
+                  href="/fundraiser/campaigns"
+                  className="inline-flex items-center px-6 py-3 border-2 border-gray-300 shadow-sm text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200"
+                >
+                  Hủy bỏ
+                </Link>
+                
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center px-8 py-3 border border-transparent shadow-lg text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Đang tạo chiến dịch...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      Tạo chiến dịch
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
           
-          {/* Debug button - visible only in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={handleDebugSubmit}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Gửi thông tin gỡ lỗi
-              </button>
-            </div>
-          )}
         </form>
       </div>
     </div>
+  </div>
   );
 }
