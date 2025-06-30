@@ -2,15 +2,20 @@
 
 namespace App\Console\Commands;
 
+<<<<<<< HEAD
 use App\Models\Campaign;
 use App\Models\CampaignClosure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+=======
+use Illuminate\Console\Command;
+>>>>>>> origin/main
 
 class ProcessExpiredCampaigns extends Command
 {
     /**
      * The name and signature of the console command.
+<<<<<<< HEAD
      */
     protected $signature = 'campaigns:process-expired {--dry-run : Run without making changes}';
 
@@ -18,12 +23,26 @@ class ProcessExpiredCampaigns extends Command
      * The console command description.
      */
     protected $description = 'Process expired campaigns and create closure records';
+=======
+     *
+     * @var string
+     */
+    protected $signature = 'campaigns:process-expired';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description';
+>>>>>>> origin/main
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
+<<<<<<< HEAD
         $dryRun = $this->option('dry-run');
         
         if ($dryRun) {
@@ -128,5 +147,8 @@ class ProcessExpiredCampaigns extends Command
         }
 
         return 0;
+=======
+        //
+>>>>>>> origin/main
     }
 }

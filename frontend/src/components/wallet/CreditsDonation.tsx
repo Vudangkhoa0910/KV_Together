@@ -8,7 +8,10 @@ import {
   ExclamationTriangleIcon 
 } from '@heroicons/react/24/outline';
 import { walletApi } from '@/services/api';
+<<<<<<< HEAD
 import toast from 'react-hot-toast';
+=======
+>>>>>>> origin/main
 
 interface CreditsDonationProps {
   campaign: {
@@ -63,12 +66,20 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
 
     const amount = parseFloat(donationAmount);
     if (amount <= 0) {
+<<<<<<< HEAD
       toast.error('Số tiền ủng hộ phải lớn hơn 0');
+=======
+      alert('Số tiền ủng hộ phải lớn hơn 0');
+>>>>>>> origin/main
       return;
     }
 
     if (amount > walletData.balance) {
+<<<<<<< HEAD
       toast.error('Số dư Credits không đủ');
+=======
+      alert('Số dư Credits không đủ');
+>>>>>>> origin/main
       return;
     }
 
@@ -82,6 +93,7 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
       });
 
       if (response.data.success) {
+<<<<<<< HEAD
         toast.success(
           'Ủng hộ thành công!', 
           {
@@ -107,6 +119,9 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
           );
         }, 1000);
         
+=======
+        alert(response.data.message || 'Cảm ơn bạn đã ủng hộ chiến dịch bằng KV Credits thiện nguyện!');
+>>>>>>> origin/main
         setShowDonationForm(false);
         setDonationAmount('');
         setMessage('');
@@ -115,6 +130,7 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
         onSuccess?.();
       }
     } catch (err: any) {
+<<<<<<< HEAD
       toast.error(
         err.response?.data?.message || 'Có lỗi xảy ra khi ủng hộ',
         {
@@ -124,6 +140,9 @@ export default function CreditsDonation({ campaign, onSuccess }: CreditsDonation
           },
         }
       );
+=======
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi ủng hộ');
+>>>>>>> origin/main
     } finally {
       setIsDonating(false);
     }

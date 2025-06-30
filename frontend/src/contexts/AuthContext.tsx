@@ -202,7 +202,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     console.log('Auth state setup completed successfully');
     console.log('User data stored in cookie:', JSON.stringify(userData));
+<<<<<<< HEAD
     console.log('Token stored with timestamp:', TokenManager.getTokenInfo());
+=======
+    console.log('Token stored in localStorage:', localStorage.getItem('token') ? 'YES' : 'NO');
+>>>>>>> origin/main
   };
 
   // Function to handle API errors

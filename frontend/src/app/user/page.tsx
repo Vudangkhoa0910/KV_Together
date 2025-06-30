@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+<<<<<<< HEAD
 import { api } from '@/services/api';
 import { UserIcon, EnvelopeIcon, ShieldCheckIcon, LockClosedIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,14 +25,29 @@ export default function UserProfilePage() {
     new_password_confirmation: ''
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+=======
+import { UserIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+
+export default function UserProfilePage() {
+  const { user, isAuthenticated, loading } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: ''
+  });
+>>>>>>> origin/main
 
   useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || '',
+<<<<<<< HEAD
         phone: user.phone || '',
         address: user.address || '',
         bio: user.bio || ''
+=======
+        email: user.email || ''
+>>>>>>> origin/main
       });
     }
   }, [user]);
@@ -58,6 +74,7 @@ export default function UserProfilePage() {
     );
   }
 
+<<<<<<< HEAD
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdating(true);
@@ -99,6 +116,13 @@ export default function UserProfilePage() {
     } finally {
       setIsUpdating(false);
     }
+=======
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement update user profile
+    console.log('Update profile:', formData);
+    setIsEditing(false);
+>>>>>>> origin/main
   };
 
   const getRoleDisplayName = (roleSlug: string) => {
@@ -133,6 +157,7 @@ export default function UserProfilePage() {
           <p className="mt-2 text-gray-600">Quản lý thông tin cá nhân và cài đặt tài khoản</p>
         </div>
 
+<<<<<<< HEAD
         {/* Alert Messages */}
         {message && (
           <div className={`mb-6 p-4 rounded-lg ${
@@ -144,12 +169,15 @@ export default function UserProfilePage() {
           </div>
         )}
 
+=======
+>>>>>>> origin/main
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Card */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Thông tin cá nhân</h2>
+<<<<<<< HEAD
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsEditing(!isEditing)}
@@ -167,6 +195,17 @@ export default function UserProfilePage() {
               </div>
 
               <form onSubmit={handleProfileSubmit} className="space-y-6">
+=======
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                >
+                  {isEditing ? 'Hủy' : 'Chỉnh sửa'}
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+>>>>>>> origin/main
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Họ và tên
@@ -191,6 +230,7 @@ export default function UserProfilePage() {
                     <EnvelopeIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <input
                       type="email"
+<<<<<<< HEAD
                       value={user?.email || ''}
                       disabled={true}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
@@ -212,10 +252,17 @@ export default function UserProfilePage() {
                       disabled={!isEditing}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-50 disabled:text-gray-600"
                       placeholder="Nhập số điện thoại"
+=======
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      disabled={!isEditing}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-50 disabled:text-gray-600"
+>>>>>>> origin/main
                     />
                   </div>
                 </div>
 
+<<<<<<< HEAD
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Địa chỉ
@@ -244,14 +291,22 @@ export default function UserProfilePage() {
                   />
                 </div>
 
+=======
+>>>>>>> origin/main
                 {isEditing && (
                   <div className="flex gap-3">
                     <button
                       type="submit"
+<<<<<<< HEAD
                       disabled={isUpdating}
                       className="px-6 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
                     >
                       {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
+=======
+                      className="px-6 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      Lưu thay đổi
+>>>>>>> origin/main
                     </button>
                     <button
                       type="button"
@@ -264,6 +319,7 @@ export default function UserProfilePage() {
                 )}
               </form>
             </div>
+<<<<<<< HEAD
 
             {/* Password Change Form */}
             {showPasswordForm && (
@@ -334,6 +390,8 @@ export default function UserProfilePage() {
                 </form>
               </div>
             )}
+=======
+>>>>>>> origin/main
           </div>
 
           {/* Account Info Sidebar */}
@@ -360,7 +418,11 @@ export default function UserProfilePage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Ngày tham gia</span>
                   <span className="text-sm text-gray-900">
+<<<<<<< HEAD
                     {user.created_at ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true, locale: vi }) : 'Đang cập nhật'}
+=======
+                    Đang cập nhật
+>>>>>>> origin/main
                   </span>
                 </div>
               </div>

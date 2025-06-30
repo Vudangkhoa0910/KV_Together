@@ -949,6 +949,7 @@ export const api = {
       throw new Error(error.response?.data?.message || 'Failed to fetch user donations');
     }
   },
+<<<<<<< HEAD
 
   // User Profile
   async updateProfile(data: {
@@ -1033,18 +1034,24 @@ export const api = {
   put: (url: string, data?: any, config?: any) => axiosInstance.put(url, data, config),
   patch: (url: string, data?: any, config?: any) => axiosInstance.patch(url, data, config),
   delete: (url: string, config?: any) => axiosInstance.delete(url, config),
+=======
+>>>>>>> origin/main
 };
 
 // Admin API functions
 export const adminApi = {
   // Dashboard
   getStats: () => axiosInstance.get('/admin/stats'),
+<<<<<<< HEAD
   getActivities: () => axiosInstance.get('/admin/recent-activities'),
   getPendingApprovals: () => axiosInstance.get('/admin/pending-approvals'),
   
   // Quick approvals
   quickApproveFundraiser: (id: number) => axiosInstance.post(`/admin/quick-approve-fundraiser/${id}`),
   quickApproveCampaign: (id: number) => axiosInstance.post(`/admin/quick-approve-campaign/${id}`),
+=======
+  getActivities: () => axiosInstance.get('/admin/activities'),
+>>>>>>> origin/main
   
   // Users
   getUsers: (params?: {
@@ -1054,10 +1061,13 @@ export const adminApi = {
     page?: number;
   }) => axiosInstance.get('/admin/users', { params }),
   
+<<<<<<< HEAD
   createUser: (data: any) => axiosInstance.post('/admin/users', data),
   updateUser: (id: number, data: any) => axiosInstance.put(`/admin/users/${id}`, data),
   deleteUser: (id: number) => axiosInstance.delete(`/admin/users/${id}`),
   
+=======
+>>>>>>> origin/main
   approveUser: (id: number) => axiosInstance.post(`/admin/users/${id}/approve`),
   suspendUser: (id: number) => axiosInstance.post(`/admin/users/${id}/suspend`),
   updateUserRole: (id: number, roleId: number) => 
@@ -1071,14 +1081,18 @@ export const adminApi = {
     page?: number;
   }) => axiosInstance.get('/admin/campaigns', { params }),
   
+<<<<<<< HEAD
   createCampaign: (data: any) => axiosInstance.post('/admin/campaigns', data),
   updateCampaign: (id: number, data: any) => axiosInstance.put(`/admin/campaigns/${id}`, data),
   deleteCampaign: (id: number) => axiosInstance.delete(`/admin/campaigns/${id}`),
   
+=======
+>>>>>>> origin/main
   approveCampaign: (id: number) => axiosInstance.post(`/admin/campaigns/${id}/approve`),
   rejectCampaign: (id: number, reason?: string) => 
     axiosInstance.post(`/admin/campaigns/${id}/reject`, { reason }),
   
+<<<<<<< HEAD
   // Activities  
   getAdminActivities: (params?: {
     status?: string;
@@ -1095,6 +1109,8 @@ export const adminApi = {
   rejectActivity: (id: number, reason?: string) => 
     axiosInstance.post(`/admin/activities/${id}/reject`, { reason }),
 
+=======
+>>>>>>> origin/main
   // News
   getNews: (params?: {
     status?: string;
@@ -1103,6 +1119,7 @@ export const adminApi = {
     page?: number;
   }) => axiosInstance.get('/admin/news', { params }),
   
+<<<<<<< HEAD
   createNews: (data: any) => axiosInstance.post('/admin/news', data),
   updateNews: (id: number, data: any) => axiosInstance.put(`/admin/news/${id}`, data),
   deleteNews: (id: number) => axiosInstance.delete(`/admin/news/${id}`),
@@ -1114,25 +1131,40 @@ export const adminApi = {
   getDonations: (params?: {
     status?: string;
     payment_method?: string;
+=======
+  publishNews: (id: number) => axiosInstance.post(`/admin/news/${id}/publish`),
+  archiveNews: (id: number) => axiosInstance.post(`/admin/news/${id}/archive`),
+  deleteNews: (id: number) => axiosInstance.delete(`/admin/news/${id}`),
+  
+  // Donations
+  getDonations: (params?: {
+    status?: string;
+>>>>>>> origin/main
     search?: string;
     page?: number;
   }) => axiosInstance.get('/admin/donations', { params }),
   
+<<<<<<< HEAD
   updateDonationStatus: (id: number, status: string) => 
     axiosInstance.put(`/admin/donations/${id}/status`, { status }),
   
   refundDonation: (id: number, reason?: string) => 
     axiosInstance.post(`/admin/donations/${id}/refund`, { reason }),
   
+=======
+>>>>>>> origin/main
   // Analytics
   getAnalytics: (params?: {
     start_date?: string;
     end_date?: string;
   }) => axiosInstance.get('/admin/analytics', { params }),
+<<<<<<< HEAD
 
   // Settings
   getSettings: () => axiosInstance.get('/admin/settings'),
   updateSettings: (settings: any) => axiosInstance.put('/admin/settings', settings),
+=======
+>>>>>>> origin/main
 };
 
 // Wallet API functions
@@ -1152,6 +1184,7 @@ export const walletApi = {
     axiosInstance.post('/wallet/use-credits', data),
   transferCredits: (data: { recipient_email: string; amount: number; message?: string }) => 
     axiosInstance.post('/wallet/transfer', data),
+<<<<<<< HEAD
 };
 
 // Export individual functions for easier import
@@ -1166,3 +1199,6 @@ export const {
   updateActivity,
   deleteActivity
 } = api;
+=======
+};
+>>>>>>> origin/main

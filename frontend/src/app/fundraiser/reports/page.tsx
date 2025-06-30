@@ -73,11 +73,27 @@ export default function FundraiserReportsPage() {
     setIsLoading(true);
     try {
       // Fetch report data from API
+<<<<<<< HEAD
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/reports`, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         }
+=======
+      const response = await fetch('/api/fundraiser/reports', {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        },
+        method: 'GET',
+        // Send filters as query parameters
+        body: JSON.stringify({
+          type: reportType,
+          range: dateRange,
+          campaign: campaignFilter,
+          status: statusFilter
+        })
+>>>>>>> origin/main
       });
       
       if (!response.ok) {
@@ -86,6 +102,7 @@ export default function FundraiserReportsPage() {
       
       const data = await response.json();
       
+<<<<<<< HEAD
       if (data) {
         // Map backend data to frontend format
         setTotals({
@@ -107,6 +124,12 @@ export default function FundraiserReportsPage() {
         
         // Set empty donations for now
         setDonations([]);
+=======
+      if (data && data.donations) {
+        setDonations(data.donations);
+        setTotals(data.totals);
+        setMonthlySummary(data.monthlySummary);
+>>>>>>> origin/main
         setIsLoading(false);
         return;
       }
@@ -176,7 +199,11 @@ export default function FundraiserReportsPage() {
     setTotals({
       totalRaised,
       totalDonations: donations.length,
+<<<<<<< HEAD
       averageDonation: completed.length > 0 ? Math.round(totalRaised / completed.length) : 0,
+=======
+      averageDonation: donations.length ? Math.round(totalRaised / completed.length) : 0,
+>>>>>>> origin/main
       totalDonors: uniqueDonors,
       successRate
     });
@@ -247,13 +274,20 @@ export default function FundraiserReportsPage() {
   };
 
   const formatCurrency = (amount: number) => {
+<<<<<<< HEAD
     // Handle NaN, Infinity, and null/undefined values
     const safeAmount = isNaN(amount) || !isFinite(amount) || amount == null ? 0 : amount;
+=======
+>>>>>>> origin/main
     return new Intl.NumberFormat('vi-VN', { 
       style: 'currency', 
       currency: 'VND',
       maximumFractionDigits: 0
+<<<<<<< HEAD
     }).format(safeAmount);
+=======
+    }).format(amount);
+>>>>>>> origin/main
   };
 
   const getChartOptions = (title: string) => {

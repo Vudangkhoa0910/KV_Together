@@ -142,6 +142,7 @@ class AuthController extends Controller
             ],
         ], 201);
     }
+<<<<<<< HEAD
 
     public function refresh(Request $request)
     {
@@ -187,4 +188,6 @@ class AuthController extends Controller
             ], 429);
         }
     }
+=======
+>>>>>>> origin/main
 }

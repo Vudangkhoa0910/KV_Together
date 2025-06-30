@@ -42,12 +42,15 @@ class Campaign extends Model
         'organizer_id',
         'rejection_reason',
         'is_featured',
+<<<<<<< HEAD
         // Deletion fields
         'deletion_requested',
         'deletion_reason',
         'deletion_requested_at',
         'deletion_status',
         'deletion_admin_note',
+=======
+>>>>>>> origin/main
         // Funding policies
         'funding_type',
         'minimum_goal',
@@ -64,7 +67,10 @@ class Campaign extends Model
         'current_amount' => 'decimal:2',
         'minimum_goal' => 'decimal:2',
         'is_featured' => 'boolean',
+<<<<<<< HEAD
         'deletion_requested' => 'boolean',
+=======
+>>>>>>> origin/main
         'auto_disburse' => 'boolean',
         'accepts_credits' => 'boolean',
         'images' => 'json'
@@ -449,6 +455,7 @@ class Campaign extends Model
     {
         return $this->creditsDonations()->where('status', 'completed')->sum('amount');
     }
+<<<<<<< HEAD
 
     /**
      * Get display status for frontend (legacy compatibility)
@@ -458,4 +465,6 @@ class Campaign extends Model
         $detailed = $this->getDetailedStatus();
         return $detailed['status'];
     }
+=======
+>>>>>>> origin/main
 }

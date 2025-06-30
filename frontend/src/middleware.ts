@@ -5,6 +5,7 @@ export async function middleware(request: NextRequest) {
     const user = request.cookies.get('user');
     const path = request.nextUrl.pathname;
     
+<<<<<<< HEAD
     // Handle root path redirect for logged-in users
     if (path === '/') {
         if (user) {
@@ -19,9 +20,22 @@ export async function middleware(request: NextRequest) {
             } catch (error) {
                 console.error('Error parsing user data for root redirect:', error);
             }
+=======
+    // Handle auth-related routes
+    if (path.startsWith('/auth/')) {
+        // For login and register pages
+        if (path === '/auth/login' || path === '/auth/register') {
+            if (user) {
+                return NextResponse.redirect(new URL('/', request.url));
+            }
+            return NextResponse.next();
+>>>>>>> origin/main
         }
+        
+        // Allow other auth-related routes to pass through
         return NextResponse.next();
     }
+<<<<<<< HEAD
     
     // Handle auth-related routes
     if (path.startsWith('/auth/')) {
@@ -57,12 +71,18 @@ export async function middleware(request: NextRequest) {
 
     // Super Admin routes
     if (path.startsWith('/super-admin')) {
+=======
+
+    // Protected routes
+    if (path.startsWith('/admin') || path.startsWith('/staff') || path.startsWith('/user')) {
+>>>>>>> origin/main
         if (!user) {
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }
 
         try {
             const userData = JSON.parse(user.value);
+<<<<<<< HEAD
             const userRole = userData.role?.slug || userData.user?.role?.slug;
 
             if (userRole !== 'admin') {
@@ -103,6 +123,27 @@ export async function middleware(request: NextRequest) {
                 return NextResponse.redirect(new URL('/', request.url));
             }
         } catch (error) {
+=======
+            // Handle different user data structures
+            const userRole = userData.role?.slug || userData.user?.role?.slug;
+
+            if (!userRole) {
+                console.error('No user role found in middleware:', userData);
+                return NextResponse.redirect(new URL('/auth/login', request.url));
+            }
+
+            // Check role-based access
+            if (path.startsWith('/admin') && userRole !== 'admin') {
+                return NextResponse.redirect(new URL('/', request.url));
+            }
+            if (path.startsWith('/staff') && userRole !== 'staff') {
+                return NextResponse.redirect(new URL('/', request.url));
+            }
+            if (path.startsWith('/user') && !['user', 'fundraiser'].includes(userRole)) {
+                return NextResponse.redirect(new URL('/', request.url));
+            }
+        } catch (error) {
+>>>>>>> origin/main
             console.error('Error parsing user data in middleware:', error);
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }
@@ -135,7 +176,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
+<<<<<<< HEAD
         '/',
+=======
+>>>>>>> origin/main
         '/auth/login',
         '/auth/register', 
         '/auth/:path*',

@@ -6,7 +6,10 @@ use App\Models\User;
 use App\Models\Campaign;
 use App\Models\Donation;
 use App\Models\News;
+<<<<<<< HEAD
 use App\Models\Activity;
+=======
+>>>>>>> origin/main
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -55,9 +58,15 @@ class AdminController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Get recent activities for dashboard
      */
     public function getRecentActivities(): JsonResponse
+=======
+     * Get recent activities
+     */
+    public function getActivities(): JsonResponse
+>>>>>>> origin/main
     {
         try {
             $activities = [];
@@ -182,7 +191,11 @@ class AdminController extends Controller
     public function getCampaigns(Request $request): JsonResponse
     {
         try {
+<<<<<<< HEAD
             $query = Campaign::with('organizer', 'categories');
+=======
+            $query = Campaign::with('user', 'category');
+>>>>>>> origin/main
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -190,9 +203,13 @@ class AdminController extends Controller
             }
 
             if ($request->has('category') && $request->category !== 'all') {
+<<<<<<< HEAD
                 $query->whereHas('categories', function ($q) use ($request) {
                     $q->where('slug', $request->category);
                 });
+=======
+                $query->where('category_id', $request->category);
+>>>>>>> origin/main
             }
 
             if ($request->has('search') && !empty($request->search)) {
@@ -278,6 +295,7 @@ class AdminController extends Controller
     public function getAnalytics(Request $request): JsonResponse
     {
         try {
+<<<<<<< HEAD
             $range = $request->input('range', 'year'); // year, month, week
             $startDate = match($range) {
                 'week' => Carbon::now()->startOfWeek()->subWeeks(11),
@@ -610,6 +628,73 @@ class AdminController extends Controller
                 return $period;
             default:
                 return $period;
+=======
+            // Get date range
+            $startDate = $request->input('start_date', Carbon::now()->subMonth());
+            $endDate = $request->input('end_date', Carbon::now());
+
+            // Daily donations chart data
+            $dailyDonations = Donation::select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(amount) as total')
+            )
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+            // Campaign categories statistics
+            $categoryStats = Campaign::select('categories.name', DB::raw('COUNT(*) as count'))
+                ->join('categories', 'campaigns.category_id', '=', 'categories.id')
+                ->groupBy('categories.id', 'categories.name')
+                ->get();
+
+            // Top fundraisers
+            $topFundraisers = User::select('users.*', DB::raw('COUNT(campaigns.id) as campaign_count'), DB::raw('SUM(donations.amount) as total_raised'))
+                ->join('campaigns', 'users.id', '=', 'campaigns.user_id')
+                ->join('donations', 'campaigns.id', '=', 'donations.campaign_id')
+                ->whereHas('role', function ($query) {
+                    $query->where('slug', 'fundraiser');
+                })
+                ->groupBy('users.id')
+                ->orderBy('total_raised', 'desc')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'daily_donations' => $dailyDonations,
+                'category_stats' => $categoryStats,
+                'top_fundraisers' => $topFundraisers,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch analytics'], 500);
+        }
+    }
+
+    /**
+     * Update user role
+     */
+    public function updateUserRole(Request $request, $id): JsonResponse
+    {
+        try {
+            $request->validate([
+                'role_id' => 'required|exists:roles,id'
+            ]);
+
+            $user = User::findOrFail($id);
+            
+            // Don't allow changing admin role of current user
+            if ($user->id === auth()->id() && $request->role_id != $user->role_id) {
+                return response()->json(['error' => 'Cannot change your own role'], 403);
+            }
+
+            $user->update(['role_id' => $request->role_id]);
+
+            return response()->json(['message' => 'User role updated successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to update user role'], 500);
+>>>>>>> origin/main
         }
     }
 
@@ -619,7 +704,11 @@ class AdminController extends Controller
     public function getNews(Request $request): JsonResponse
     {
         try {
+<<<<<<< HEAD
             $query = News::with('author');
+=======
+            $query = News::with('user');
+>>>>>>> origin/main
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -633,7 +722,11 @@ class AdminController extends Controller
             if ($request->has('search') && !empty($request->search)) {
                 $query->where(function ($q) use ($request) {
                     $q->where('title', 'like', '%' . $request->search . '%')
+<<<<<<< HEAD
                       ->orWhere('summary', 'like', '%' . $request->search . '%');
+=======
+                      ->orWhere('content', 'like', '%' . $request->search . '%');
+>>>>>>> origin/main
                 });
             }
 
@@ -646,6 +739,7 @@ class AdminController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Create news
      */
     public function createNews(Request $request): JsonResponse
@@ -735,6 +829,8 @@ class AdminController extends Controller
     }
 
     /**
+=======
+>>>>>>> origin/main
      * Publish news
      */
     public function publishNews(Request $request, $id): JsonResponse
@@ -765,6 +861,7 @@ class AdminController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Get activities with filters
      */
     public function getActivities(Request $request): JsonResponse
@@ -1281,6 +1378,19 @@ class AdminController extends Controller
             return response()->json(['message' => 'Settings updated successfully']);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to update settings'], 500);
+=======
+     * Delete news
+     */
+    public function deleteNews(Request $request, $id): JsonResponse
+    {
+        try {
+            $news = News::findOrFail($id);
+            $news->delete();
+
+            return response()->json(['message' => 'News deleted successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to delete news'], 500);
+>>>>>>> origin/main
         }
     }
 }

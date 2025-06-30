@@ -38,6 +38,7 @@ export default function NotificationsPage() {
     try {
       setLoading(true);
       
+<<<<<<< HEAD
       const queryParams = new URLSearchParams({ per_page: '20' });
       if (filter === 'unread') {
         queryParams.append('unread_only', 'true');
@@ -72,6 +73,97 @@ export default function NotificationsPage() {
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setNotifications([]);
+=======
+      // In production, this would be a real API call
+      // const response = await fetch(`/api/fundraiser/notifications?filter=${filter}`);
+      // const data = await response.json();
+      
+      // Mock data for development
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const mockNotifications: Notification[] = [
+        {
+          id: 1,
+          type: 'campaign_status',
+          title: 'Chiến dịch được phê duyệt',
+          message: 'Chiến dịch "Hỗ trợ trẻ em vùng cao" của bạn đã được phê duyệt và hiện đang hoạt động.',
+          read: true,
+          created_at: '2025-06-20T10:30:00Z',
+          campaign_id: 1,
+          campaign_slug: 'ho-tro-tre-em-vung-cao'
+        },
+        {
+          id: 2,
+          type: 'donation',
+          title: 'Quyên góp mới',
+          message: 'Nguyễn Văn A vừa quyên góp 5.000.000đ cho chiến dịch "Hỗ trợ trẻ em vùng cao".',
+          read: false,
+          created_at: '2025-06-23T15:45:00Z',
+          campaign_id: 1,
+          campaign_slug: 'ho-tro-tre-em-vung-cao',
+          donation_id: 123
+        },
+        {
+          id: 3,
+          type: 'goal_reached',
+          title: 'Đạt mục tiêu!',
+          message: 'Chiến dịch "Cứu trợ đồng bào bị lũ lụt" đã đạt 100% mục tiêu quyên góp! Xin chúc mừng!',
+          read: false,
+          created_at: '2025-06-22T09:15:00Z',
+          campaign_id: 3,
+          campaign_slug: 'cuu-tro-dong-bao-bi-lu-lut'
+        },
+        {
+          id: 4,
+          type: 'donor_message',
+          title: 'Tin nhắn mới từ nhà hảo tâm',
+          message: 'Trần Thị B: "Cảm ơn vì những nỗ lực tuyệt vời của quỹ. Tôi rất muốn biết thêm về cách tiền quyên góp được sử dụng."',
+          read: false,
+          created_at: '2025-06-21T14:20:00Z',
+          campaign_id: 1,
+          campaign_slug: 'ho-tro-tre-em-vung-cao',
+          donation_id: 124
+        },
+        {
+          id: 5,
+          type: 'about_to_expire',
+          title: 'Chiến dịch sắp kết thúc',
+          message: 'Chiến dịch "Học bổng cho sinh viên vượt khó" của bạn sẽ kết thúc trong 7 ngày nữa. Hiện đã đạt 60% mục tiêu.',
+          read: true,
+          created_at: '2025-06-19T11:30:00Z',
+          campaign_id: 5,
+          campaign_slug: 'hoc-bong-cho-sinh-vien-vuot-kho'
+        },
+        {
+          id: 6,
+          type: 'system',
+          title: 'Cập nhật hệ thống',
+          message: 'Hệ thống sẽ bảo trì từ 23:00 - 01:00 ngày 25/06/2025. Vui lòng không cập nhật chiến dịch trong khoảng thời gian này.',
+          read: true,
+          created_at: '2025-06-18T09:00:00Z'
+        },
+        {
+          id: 7,
+          type: 'campaign_status',
+          title: 'Chiến dịch cần bổ sung thông tin',
+          message: 'Chiến dịch "Trang bị y tế cho trạm xá vùng núi" cần bổ sung thông tin về cách thức sử dụng tiền quyên góp.',
+          read: false,
+          created_at: '2025-06-17T10:15:00Z',
+          campaign_id: 4,
+          campaign_slug: 'trang-bi-y-te-cho-tram-xa-vung-nui'
+        }
+      ];
+      
+      // Filter notifications if needed
+      let filteredNotifications = mockNotifications;
+      if (filter !== 'all') {
+        filteredNotifications = mockNotifications.filter(notification => notification.type === filter);
+      }
+      
+      setNotifications(filteredNotifications);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+>>>>>>> origin/main
     } finally {
       setLoading(false);
     }
@@ -79,6 +171,7 @@ export default function NotificationsPage() {
   
   const markAsRead = async (id: number) => {
     try {
+<<<<<<< HEAD
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fundraiser/notifications/${id}/read`, {
         method: 'POST',
         headers: {
@@ -94,6 +187,19 @@ export default function NotificationsPage() {
           )
         );
       }
+=======
+      // In production, this would be a real API call
+      // await fetch(`/api/fundraiser/notifications/${id}/read`, {
+      //   method: 'PUT'
+      // });
+      
+      // Update in local state
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === id ? { ...notification, read: true } : notification
+        )
+      );
+>>>>>>> origin/main
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -101,9 +207,21 @@ export default function NotificationsPage() {
   
   const markAllAsRead = async () => {
     try {
+<<<<<<< HEAD
       // Mark all notifications as read individually
       const unreadNotifications = notifications.filter(n => !n.read);
       await Promise.all(unreadNotifications.map(n => markAsRead(n.id)));
+=======
+      // In production, this would be a real API call
+      // await fetch(`/api/fundraiser/notifications/read-all`, {
+      //   method: 'PUT'
+      // });
+      
+      // Update in local state
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+>>>>>>> origin/main
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
     }
@@ -111,7 +229,16 @@ export default function NotificationsPage() {
   
   const deleteNotification = async (id: number) => {
     try {
+<<<<<<< HEAD
       // For now, just remove from local state
+=======
+      // In production, this would be a real API call
+      // await fetch(`/api/fundraiser/notifications/${id}`, {
+      //   method: 'DELETE'
+      // });
+      
+      // Update in local state
+>>>>>>> origin/main
       setNotifications(prev => 
         prev.filter(notification => notification.id !== id)
       );

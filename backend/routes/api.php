@@ -205,6 +205,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Dashboard
     Route::get('/stats', [AdminController::class, 'getStats']);
+<<<<<<< HEAD
     Route::get('/recent-activities', [AdminController::class, 'getRecentActivities']);
     Route::get('/pending-approvals', [AdminController::class, 'getPendingApprovals']);
     
@@ -217,10 +218,17 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::post('/users', [AdminController::class, 'createUser']);
     Route::put('/users/{id}', [AdminController::class, 'updateUser']);
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+=======
+    Route::get('/activities', [AdminController::class, 'getActivities']);
+    
+    // Users
+    Route::get('/users', [AdminController::class, 'getUsers']);
+>>>>>>> origin/main
     Route::post('/users/{id}/approve', [AdminController::class, 'approveUser']);
     Route::post('/users/{id}/suspend', [AdminController::class, 'suspendUser']);
     Route::put('/users/{id}/role', [AdminController::class, 'updateUserRole']);
     
+<<<<<<< HEAD
     // Campaigns CRUD
     Route::get('/campaigns', [AdminController::class, 'getCampaigns']);
     Route::post('/campaigns', [AdminController::class, 'createCampaign']);
@@ -257,6 +265,24 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Settings Management
     Route::get('/settings', [AdminController::class, 'getSettings']);
     Route::put('/settings', [AdminController::class, 'updateSettings']);
+=======
+    // Campaigns
+    Route::get('/campaigns', [AdminController::class, 'getCampaigns']);
+    Route::post('/campaigns/{id}/approve', [AdminController::class, 'approveCampaign']);
+    Route::post('/campaigns/{id}/reject', [AdminController::class, 'rejectCampaign']);
+    
+    // Donations
+    Route::get('/donations', [AdminController::class, 'getDonations']);
+    
+    // News
+    Route::get('/news', [AdminController::class, 'getNews']);
+    Route::post('/news/{id}/publish', [AdminController::class, 'publishNews']);
+    Route::post('/news/{id}/archive', [AdminController::class, 'archiveNews']);
+    Route::delete('/news/{id}', [AdminController::class, 'deleteNews']);
+    
+    // Analytics
+    Route::get('/analytics', [AdminController::class, 'getAnalytics']);
+>>>>>>> origin/main
 });
 
 // Admin routes - legacy controllers
@@ -303,6 +329,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/news', [NewsController::class, 'adminIndex']);
 });
 
+<<<<<<< HEAD
 // Fundraiser routes
 Route::middleware('auth:sanctum')->prefix('fundraiser')->group(function () {
     // Dashboard
@@ -335,6 +362,8 @@ Route::middleware('auth:sanctum')->prefix('fundraiser')->group(function () {
     Route::get('/wallet/transactions', [App\Http\Controllers\FundraiserController::class, 'getWalletTransactions']);
 });
 
+=======
+>>>>>>> origin/main
 // Virtual Wallet routes (authenticated users only)
 Route::middleware('auth:sanctum')->prefix('wallet')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\VirtualWalletController::class, 'getWallet']);
@@ -342,6 +371,7 @@ Route::middleware('auth:sanctum')->prefix('wallet')->group(function () {
     Route::get('/statistics', [App\Http\Controllers\Api\VirtualWalletController::class, 'getStatistics']);
     Route::post('/use-credits', [App\Http\Controllers\Api\VirtualWalletController::class, 'useCredits']);
     Route::post('/transfer', [App\Http\Controllers\Api\VirtualWalletController::class, 'transferCredits']);
+<<<<<<< HEAD
 });
 
 // Admin/Fundraiser activity registration management
@@ -352,4 +382,6 @@ Route::prefix('admin/activity-registrations')->group(function () {
     Route::patch('/{registration}/confirm', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'confirm']);
     Route::patch('/{registration}/cancel', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'cancel']);
     Route::post('/bulk-confirm', [App\Http\Controllers\Admin\ActivityRegistrationController::class, 'bulkConfirm']);
+=======
+>>>>>>> origin/main
 });
